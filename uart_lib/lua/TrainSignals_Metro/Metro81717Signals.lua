@@ -949,26 +949,18 @@ function Metro81717Signals:update(self,Train)
     
     self.TextDisplaysSignalsStruct[1].DisplayOn = inHardwareSignals.radioInformer
     self.TextDisplaysSignalsStruct[1].DisplayLedOn = inHardwareSignals.radioInformer
-    local textOut,textSize = xContainer.string2byte("АСНП")
+    local textOut = xContainer.string2byte(outHardwareSignals.textInformer)
     
     for i=0,39 do
-        if i == 39 then
-            self.TextDisplaysSignalsStruct[1].textBytes[i] = 0
-        else
-            self.TextDisplaysSignalsStruct[1].textBytes[i] = textOut[i] or 0
-        end
+        self.TextDisplaysSignalsStruct[1].textBytes[i] = textOut[i] or 0
     end
     
     self.TextDisplaysSignalsStruct[0].DisplayOn = 1
     self.TextDisplaysSignalsStruct[0].DisplayLedOn = 1
-    textOut,textSize = xContainer.string2byte("АСОТП")
+    textOut = xContainer.string2byte(outHardwareSignals.textAsotp)
     
     for i=0,47 do
-        if i == 47 then
-            self.TextDisplaysSignalsStruct[0].textBytes[i] = 0
-        else
-            self.TextDisplaysSignalsStruct[0].textBytes[i] = textOut[i] or 0
-        end
+        self.TextDisplaysSignalsStruct[0].textBytes[i] = textOut[i] or 0
     end
     
     self.Output_Signals[200] = outHardwareSignals.L0CH -- 0Ч
@@ -1456,28 +1448,28 @@ function Metro81717Signals:outSignals()
 	self.outHardwareSignals.LVD = xCont("LVD")
 	self.outHardwareSignals.LST = xCont("LST")
 	self.outHardwareSignals.LHRK = xCont("LHRK")
-	self.outHardwareSignals.lampLeftDoors1 = xCont("LDoorLeft")
-	self.outHardwareSignals.lampRightDoors = xCont("LDoorRight")
-	self.outHardwareSignals.lampBv = xCont("LBV")
+	-- self.outHardwareSignals.lampLeftDoors1 = xCont("LDoorLeft")
+	-- self.outHardwareSignals.lampRightDoors = xCont("LDoorRight")
+	-- self.outHardwareSignals.lampBv = xCont("LBV")
 	self.outHardwareSignals.L0CH = xCont("LOCH")
 	self.outHardwareSignals.L40 = xCont("L40")
 	self.outHardwareSignals.L60 = xCont("L60")
 	self.outHardwareSignals.L70 = xCont("L70")
 	self.outHardwareSignals.L80 = xCont("L80")
 	self.outHardwareSignals.LRS = xCont("LRV")
-	self.outHardwareSignals.LAB = xCont("LAB")
+	-- self.outHardwareSignals.LAB = xCont("LAB")
 	self.outHardwareSignals.LKVD = xCont("LKVD")
-	self.outHardwareSignals.LAV = xCont("LAV")
-	self.outHardwareSignals.LAV1 = xCont("LAV1")
+	-- self.outHardwareSignals.LAV = xCont("LAV")
+	-- self.outHardwareSignals.LAV1 = xCont("LAV1")
 	
 	self.outHardwareSignals.LSD = xCont("LSD")
-	self.outHardwareSignals.lampPneumBrakes = xCont("LampPneumBrakes")
-	self.outHardwareSignals.LKVP = xCont("LKVP")
+	-- self.outHardwareSignals.lampPneumBrakes = xCont("LampPneumBrakes")
+	-- self.outHardwareSignals.LKVP = xCont("LKVP")
 	self.outHardwareSignals.LN = xCont("LN")
 	self.outHardwareSignals.LEKK = xCont("LEKK")
 	self.outHardwareSignals.LKT = xCont("LKT")
-	self.outHardwareSignals.textInformer = xCont("InformerText")
-	self.outHardwareSignals.textAsotp = xCont("AsotpText")
+	-- self.outHardwareSignals.textInformer = xCont("InformerText")
+	-- self.outHardwareSignals.textAsotp = xCont("AsotpText")
 	self.outHardwareSignals.vfact = xCont("vfact")
     
     --[[
@@ -1571,8 +1563,10 @@ function Metro81717Signals:startSignals(a_port)
             ULib.tsayError(nil,Format("Metro81717Signals.lua: Не удалось открыть COM%d",a_port))
             UART.StopCOM()
             print("Metro81717Signals.lua:",res)
+            
         end
     end
+    if res ~= 0 then return end
     
     ULib.tsayColor(nil,false,Color(0,255,0),"Metro81717Signals.lua: Подключение установлено")
     Metro81717Signals:InitConfArrays(UARTFrontViewClient)

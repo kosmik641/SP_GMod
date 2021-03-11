@@ -30,8 +30,8 @@ if SERVER then
             -- xContainer["UAVAEmergency"] = 0
             -- xContainer["UAVAFeed"] = 0
             -- xContainer["UAVAService"] = 0
-            xContainer["InformerText"] = ""
-            xContainer["AsotpText"] = ""
+            xContainer["InformerText"] = self.ASNP.OutText
+            xContainer["AsotpText"] = self.IGLA_CBKI.OutText
             
             xContainer["L00"] = self:GetNW2Int("AR0")
             xContainer["LKVC"] = self:GetNW2Int("KVC")

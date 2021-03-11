@@ -32,7 +32,7 @@ function xContainer.string2byte(str)
         end
         byte_char_index = byte_char_index + 1
     end
-    return byte_char,byte_char_index
+    return byte_char
 end
 
 local btnMap = {

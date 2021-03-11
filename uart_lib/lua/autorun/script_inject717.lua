@@ -1,9 +1,9 @@
 local LampLEKK = math.random() > 0.9 and 1 or 0
 
 if SERVER then
-    local Train = scripted_ents.GetStored("gmod_subway_81-717_mvm").t
+    
     timer.Simple(0,function()
-        
+        local Train = scripted_ents.GetStored("gmod_subway_81-717_mvm").t
         function Train:getOutSignals()
             if not xContainer then return end
             xContainer["Ammeter"] = (self:GetPackedRatio("EnginesCurrent") - 0.5) * 1000

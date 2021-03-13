@@ -486,6 +486,10 @@ else
         ["pnm_button1_off"] = true,
         ["pnm_button2_on"] = true,
         ["pnm_button2_off"] = true,
+        ["triple_0-down"] = true,
+        ["triple_down-0"] = true,
+        ["triple_0-up"] = true,
+        ["triple_up-0"] = true,
         --["kr_open"] = true,
         --["kr_close"] = true,
 
@@ -501,7 +505,7 @@ else
 			local entsound = self.ClientSounds[soundid]
 			for i,esnd in ipairs(entsound) do
 				soundid = esnd[2](self,range,location)
-                if Metrostroi.UARTConnected and muteSounds[soundid] then return end
+                if self:GetNW2Bool("UARTWorking") and muteSounds[soundid] then return end
 				local soundname = self.SoundNames[soundid]
 				if not soundname then print("NO SOUND",soundname,soundid) continue end
 				if type(soundname) == "table" then soundname = table.Random(soundname) end
@@ -541,7 +545,7 @@ else
 			return
 		end
         
-        if Metrostroi.UARTConnected and muteSounds[soundid] then return end
+        if self:GetNW2Bool("UARTWorking") and muteSounds[soundid] then return end
 
 		local tbl = self.SoundPositions[soundid]
 

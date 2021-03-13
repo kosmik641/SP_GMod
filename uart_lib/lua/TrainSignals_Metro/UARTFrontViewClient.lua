@@ -122,7 +122,10 @@ local Read_Command = {}
 Read_Command[0] = 0x00
 Read_Command[1] = 0x85
 local command = 0
+local lastUpdate = CurTime()
 function UARTFrontViewClient:update()
+    if CurTime() - lastUpdate < (command == 1 and 0.02 or 0.04) then return end
+    lastUpdate = CurTime()
 
     if command == 0 then
         UART.WriteByte(Read_Command,2)

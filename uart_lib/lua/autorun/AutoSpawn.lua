@@ -1,31 +1,9 @@
 if CLIENT then return end
 Autospawn = Autospawn or {}
 gameevent.Listen( "player_spawn" )
-util.AddNetworkString("UARTCloser")
-util.AddNetworkString("ZarnSetCam")
 
 -- Номер COM порта вводить сюда:
 Autospawn.COMPort = 8
-
-net.Receive("UARTCloser",function(_,ply)
-    if Metro81717Signals.Initialized then
-        Metro81717Signals.Initialized = false
-        Metro81717Signals:stopSignals()
-        ply:SetNW2Bool("UARTWorking",false)
-        print("Close UART!")
-    end
-end)
-
-concommand.Add("ch",function()
-    if not IsValid(Autospawn.HeadWagon) then MsgC(Color(255,0,0),"\nСостав не найден\n") return end
-    MsgC(Color(255,255,0),"\nСмена кабины...\n")
-    local ply = Autospawn.HeadWagon.DriverSeat:GetDriver()
-    ulx.changecab( ply )
-    ply:GetNW2Bool("UARTWorking",false)
-    Metro81717Signals.Initialized = false
-    Autospawn.HeadWagon = Autospawn.HeadWagon.WagonList[#Autospawn.HeadWagon.WagonList]
-    timer.Simple(1.1,function() Metro81717Signals:startSignals(Autospawn.COMPort) net.Start("ZarnSetCam") net.Send(ply) end)
-end)
 
 Autospawn.Param = {
     ["Type"] = 2, -- 81-717.5
@@ -284,4 +262,3 @@ hook.Add("player_spawn", "SpawnTrainForPlayer", function(data)
         net.Send(ply)
     end)
 end)
-

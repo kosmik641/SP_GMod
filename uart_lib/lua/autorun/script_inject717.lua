@@ -17,6 +17,8 @@ if SERVER then
             xContainer["LampAsotp2"] = self:GetNW2Int("IGLA:ButtonL2")
             xContainer["LampAsotp3"] = self:GetNW2Int("IGLA:ButtonL3")
             xContainer["LampAsotp4"] = self:GetNW2Int("IGLA:ButtonL4")
+            xContainer["LampAsotpFire"] = self:GetNW2Int("IGLA:Fire")
+            xContainer["LampAsotpFault"] = self:GetNW2Int("IGLA:Error")
             xContainer["LAVU"] = self:GetNW2Int("AVU")
             xContainer["LSP"] = self:GetNW2Int("LSP")
             -- xContainer["InformerLampLeft"] = 0
@@ -61,99 +63,37 @@ if SERVER then
             xContainer["LEKK"] = LampLEKK
             xContainer["LKT"] = self:GetNW2Int("KT")
             xContainer["vfact"] = math.floor(self:GetPackedRatio("Speed")*100)
-            
-            -- xContainer["A1off"] = 0
-            -- xContainer["A2off"] = 0
-            -- xContainer["A3off"] = 0
-            -- xContainer["A4off"] = 0
-            -- xContainer["A5off"] = 0
-            -- xContainer["A6off"] = 0
-            -- xContainer["A7off"] = 0
-            -- xContainer["A8off"] = 0
-            -- xContainer["A9off"] = 0
-            -- xContainer["A10off"] = 0
-            -- xContainer["A11off"] = 0
-            -- xContainer["A12off"] = 0
-            -- xContainer["A13off"] = 0
-            -- xContainer["A14off"] = 0
-            -- xContainer["A15off"] = 0
-            -- xContainer["A16off"] = 0
-            -- xContainer["A17off"] = 0
-            -- xContainer["A18off"] = 0
-            -- xContainer["A19off"] = 0
-            -- xContainer["A20off"] = 0
-            -- xContainer["A21off"] = 0
-            -- xContainer["A22off"] = 0
-            -- xContainer["A24off"] = 0
-            -- xContainer["A25off"] = 0
-            -- xContainer["A26off"] = 0
-            -- xContainer["A27off"] = 0
-            -- xContainer["A28off"] = 0
-            -- xContainer["A29off"] = 0
-            -- xContainer["A30off"] = 0
-            -- xContainer["A31off"] = 0
-            -- xContainer["A32off"] = 0
-            -- xContainer["A33off"] = 0
-            -- xContainer["A37off"] = 0
-            -- xContainer["A38off"] = 0
-            -- xContainer["A39off"] = 0
-            -- xContainer["A40off"] = 0
-            -- xContainer["A41off"] = 0
-            -- xContainer["A42off"] = 0
-            -- xContainer["A43off"] = 0
-            -- xContainer["A44off"] = 0
-            -- xContainer["A45off"] = 0
-            -- xContainer["A46off"] = 0
-            -- xContainer["A47off"] = 0
-            -- xContainer["A48off"] = 0
-            -- xContainer["A49off"] = 0
-            -- xContainer["A50off"] = 0
-            -- xContainer["A51off"] = 0
-            -- xContainer["A52off"] = 0
-            -- xContainer["A53off"] = 0
-            -- xContainer["A54off"] = 0
-            -- xContainer["A56off"] = 0
-            -- xContainer["A57off"] = 0
-            -- xContainer["A65off"] = 0
-            -- xContainer["A66off"] = 0
-            -- xContainer["A68off"] = 0
-            -- xContainer["A70off"] = 0
-            -- xContainer["A71off"] = 0
-            -- xContainer["A72off"] = 0
-            -- xContainer["A73off"] = 0
-            -- xContainer["A74off"] = 0
-            -- xContainer["A75off"] = 0
-            -- xContainer["A76off"] = 0
-            -- xContainer["A77off"] = 0
-            -- xContainer["A78off"] = 0
-            -- xContainer["A79off"] = 0
-            -- xContainer["A80off"] = 0
-            -- xContainer["A81off"] = 0
-            -- xContainer["A82off"] = 0
-            -- xContainer["A83off"] = 0
-            -- xContainer["AB1off"] = 0
-            -- xContainer["AB3off"] = 0
-            -- xContainer["AB6off"] = 0
-            -- xContainer["AC1off"] = 0
-            -- xContainer["AP63off"] = 0
-            -- xContainer["AISoff"] = 0
-            -- xContainer["VUoff"] = 0  
         end
         
         Train.Old_Think = Train.Old_Think or Train.Think
         function Train:Think()
             self.RetVal = self:Old_Think()
-            if Metro81717Signals.Initialized and Autospawn.HeadWagon == self then
-                self:getOutSignals()
-                Metro81717Signals:update(UARTFrontViewClient,self)
-                xContainer:Thread(self,self.DriverSeat:GetDriver())
+            if Autospawn.HeadWagon == self then
+                if IsValid(self.DriverSeat:GetDriver()) and Metro81717Signals.Initialized then
+                    self:getOutSignals()
+                    UARTFrontViewClient:update()
+                    Metro81717Signals:update(UARTFrontViewClient,self)
+                    xContainer:Thread(self)
+                    self:SetNW2Bool("UARTWorking",true)
+                else
+                    if Metro81717Signals.Initialized then
+                        Metro81717Signals.Initialized = false
+                        Metro81717Signals:stopSignals()
+                        self:SetNW2Bool("UARTWorking",false)
+                        print("Close UART!")
+                    end
+                end
             end
             return self.RetVal
         end
         
         -- Remove entity
         function Train:OnRemove()
-
+            if Metro81717Signals.Initialized then
+                Metro81717Signals.Initialized = false
+                Metro81717Signals:stopSignals()
+            end
+            -- print("Close UART!")
             -- Remove all linked objects
             constraint.RemoveAll(self)
             if self.TrainEntities then

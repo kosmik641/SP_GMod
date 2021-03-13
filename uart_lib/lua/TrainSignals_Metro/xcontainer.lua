@@ -55,11 +55,14 @@ local btnMap = {
     ["EmergencyTractionButton"] = "KAH",
     ["EmergencyTractionSwitch"] = "VAH",
     ["EmergencyVentillationSwitch"] = "V13",
+    ["VPR"] = "R_VPR",
     -- ["EndDoorsSwitch"] = "",
     ["EpvArsCutOffValve"] = "EPK", -- кран ЭПВ-АРС
     ["KSN"] = "KSN",--сигнализация неисправностей
     ["FirstProg717"] = "R_Program1",
     ["SecondProg717"] = "R_Program2",
+    ["First2Prog717"] = "R_Program1H",
+    ["Second2Prog717"] = "R_Program2H",
     ["Headlights"] = "L_4",--Фары
     ["InformerButtonDown"] = "R_ASNPDown",
     ["InformerButtonMenu"] = "R_ASNPMenu",
@@ -113,6 +116,7 @@ local btnMap = {
     ["VPSwitch"] = "VP",
     ["VUSSwitch"] = "VUS",
     ["VZD"] = "VUD1",--закрытие дверей
+    ["ARS13V"] = "ARS13", -- АРС 13V
 
     ["A1"] = "A1", -- Ход
     ["A2"] = "A2", -- Управление РК
@@ -192,8 +196,7 @@ local btnMap = {
     ["VU"] = "A84", -- Выключатель управления
 }
 
-function xContainer:Thread(Train,driverPly)
-    if IsValid(driverPly) then driverPly:SetNW2Bool("UARTWorking",true) end
+function xContainer:Thread(Train)
     for k,v in pairs(btnMap) do
         local inVal = self[k]
         if v ~= 0 then
@@ -231,4 +234,5 @@ function xContainer:Thread(Train,driverPly)
             end
         end
     end
+    -- print(UARTFrontViewClient.Input_Signals[10])
 end

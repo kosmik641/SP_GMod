@@ -33,7 +33,9 @@ if SERVER then
             -- xContainer["UAVAFeed"] = 0
             -- xContainer["UAVAService"] = 0
             xContainer["InformerText"] = self.ASNP.OutText
+            xContainer["InformerDisplay"] = self.ASNP.DispalyOn
             xContainer["AsotpText"] = self.IGLA_CBKI.OutText
+            xContainer["AsotpDisplay"] = self.IGLA_CBKI.DispalyOn
             
             xContainer["L00"] = self:GetNW2Int("AR0")
             xContainer["LKVC"] = self:GetNW2Int("KVC")
@@ -72,9 +74,11 @@ if SERVER then
                 if IsValid(self.DriverSeat:GetDriver()) and Metro81717Signals.Initialized then
                     self:getOutSignals()
                     UARTFrontViewClient:update()
-                    Metro81717Signals:update(UARTFrontViewClient,self)
+                    -- Metro81717Signals:update(UARTFrontViewClient,self)
                     xContainer:Thread(self)
+                    self:SetNW2Int("UART_FVC_Command",UARTFrontViewClient.command)
                     self:SetNW2Bool("UARTWorking",true)
+                    -- self:SetNW2Float("UART_FVC_FrameTime",engine.TickInterval()*2.1)
                 else
                     if Metro81717Signals.Initialized then
                         Metro81717Signals.Initialized = false
@@ -92,6 +96,7 @@ if SERVER then
             if Metro81717Signals.Initialized then
                 Metro81717Signals.Initialized = false
                 Metro81717Signals:stopSignals()
+                print("Close UART!")
             end
             -- print("Close UART!")
             -- Remove all linked objects

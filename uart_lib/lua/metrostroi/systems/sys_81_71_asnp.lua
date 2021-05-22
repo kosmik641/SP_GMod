@@ -46,6 +46,7 @@ function TRAIN_SYSTEM:Initialize()
     --self.Train:LoadSystem("R_Program2","Relay","Switch",{bass = true })
     
     self.OutText = ""
+    self.DispalyOn = 0
 end
 
 if TURBOSTROI then return end
@@ -759,10 +760,12 @@ function TRAIN_SYSTEM:Think()
         self.ASNPTimer = nil
         if self.LineOut>0 then self:AnnQueue{-2,"buzz_end","click2"} end
         self.OutText = ""
+        self.DispalyOn = 0
     end
     if Power and self.State == 0 then
         self.State = -1
         self.ASNPTimer = CurTime()-math.Rand(-0.3,0.3)
+        self.DispalyOn = 1
     end
     if self.State == -1 and self.ASNPTimer and CurTime()-self.ASNPTimer > 1 then
         self.State = Metrostroi.ASNPSetup and 1 or -2
@@ -775,74 +778,77 @@ function TRAIN_SYSTEM:Think()
             end
         end
         if Metro81717Signals.Initialized and Autospawn.HeadWagon == Train then
-            -- print(Train)
-            local ltbl = Metrostroi.ASNPSetup[self.Train:GetNW2Int("Announcer",1)][self.Line]
-            if self.State == 1 then
-                self.OutText = "Нажмите \"MENU\"          для начала настройки" 
-            elseif self.State == 2 then
-                local num = Format("%02d",self.RouteNumber)
-                if self.Selected == 0 then
-                    self.OutText = Format("Номер маршрута:         %s%s  \"+-\" выб \"MENU\" след",CurTime()%1>0.5 and num[1] or " ",num[2])
-                elseif self.Selected == 1 then
-                    self.OutText = Format("Номер маршрута:         %s%s  \"+-\" выб \"MENU\" след",num[1],CurTime()%1>0.5 and num[2] or " ")
-                elseif self.Selected == 2 then
-                    self.OutText = Format("Номер маршрута:         %s  \"+-\" отм \"MENU\" ввод",num)
-                end
-            elseif self.State == 3 then
-                local St,En = ltbl[1],ltbl[#ltbl]
-                local timer = math.ceil(CurTime()%6/1.5)
-                local s2 = timer == 1 and (ltbl.Name or "Нет названия") or timer == 2 and Format("От:%s",St[2]) or timer == 3 and Format("До:%s",En[2]) or "\"+-\" выб \"MENU\" ввод"
-                self.OutText = Format("%s    %s%s",ltbl.Loop and "Маршрут (кол)" or "Маршрут      ",CurTime()%1>0.5 and Format("%03d-%03d",St[1],En[1]) or "   -   ",s2)
-            elseif self.State == 4 then
-                if not ltbl.Loop then
-                    local St = ltbl[self.FirstStation]
-                    self.OutText = Format("Начальная ст.    %s-   %03d:%s",CurTime()%1>0.5 and Format("%03d",St[1]) or "   ",St[1],St[2])
-                end
-            elseif self.State == 5 then
-                if not ltbl.Loop then
-                    local St = ltbl[self.FirstStation]
-                    local En = ltbl[self.LastStation]
-                    self.OutText = Format("Конечная станция %03d-%s%03d:%s",St[1],CurTime()%1>0.5 and Format("%03d",En[1]) or "   ",En[1],En[2])
-                end
-            elseif self.State == 6 then
-                if not ltbl.Loop then
-                    local St = ltbl[self.FirstStation]
-                    local En = ltbl[self.LastStation]
-                    if self.Path then
-                        local StT = En;En=St;St=StT
+            if not Metrostroi.ASNPSetup[self.Train:GetNW2Int("Announcer",1)] then
+                self.OutText = "       МЕТРОКОМ-М"
+            else
+                local ltbl = Metrostroi.ASNPSetup[self.Train:GetNW2Int("Announcer",1)][self.Line]
+                if self.State == 1 then
+                    self.OutText = "Нажмите \"MENU\"          для начала настройки" 
+                elseif self.State == 2 then
+                    local num = Format("%02d",self.RouteNumber)
+                    if self.Selected == 0 then
+                        self.OutText = Format("Номер маршрута:         %s%s  \"+-\" выб \"MENU\" след",CurTime()%1>0.5 and num[1] or " ",num[2])
+                    elseif self.Selected == 1 then
+                        self.OutText = Format("Номер маршрута:         %s%s  \"+-\" выб \"MENU\" след",num[1],CurTime()%1>0.5 and num[2] or " ")
+                    elseif self.Selected == 2 then
+                        self.OutText = Format("Номер маршрута:         %s  \"+-\" отм \"MENU\" ввод",num)
                     end
+                elseif self.State == 3 then
+                    local St,En = ltbl[1],ltbl[#ltbl]
                     local timer = math.ceil(CurTime()%6/1.5)
                     local s2 = timer == 1 and (ltbl.Name or "Нет названия") or timer == 2 and Format("От:%s",St[2]) or timer == 3 and Format("До:%s",En[2]) or "\"+-\" выб \"MENU\" ввод"
-                    self.OutText = Format("Проверьте данные   %02d %s%s",self.RouteNumber,self.Path and "II" or " I",s2)
-                end
-            elseif self.State == 7 then
-                local En
-                if self.Path and not ltbl.Loop then
-                    En = ltbl[self.FirstStation]
-                else
-                    En = ltbl[self.LastStation]
-                end
-                self.OutText = self.Arrived and "Отпр. " or "Приб. "
-                for i=1,14 do
-                    if i <= utf8.len(ltbl[self.Station][2]) then
-                        self.OutText = self.OutText..(i<14 and utf8.GetChar(ltbl[self.Station][2],i) or ".")
-                    else
-                        self.OutText = self.OutText.." "
+                    self.OutText = Format("%s    %s%s",ltbl.Loop and "Маршрут (кол)" or "Маршрут      ",CurTime()%1>0.5 and Format("%03d-%03d",St[1],En[1]) or "   -   ",s2)
+                elseif self.State == 4 then
+                    if not ltbl.Loop then
+                        local St = ltbl[self.FirstStation]
+                        self.OutText = Format("Начальная ст.    %s-   %03d:%s",CurTime()%1>0.5 and Format("%03d",St[1]) or "   ",St[1],St[2])
                     end
-                end
-                self.OutText = self.OutText..((Train.VBD and self.K1==0) and "Бл.Л" or "    ")
-                if self.LineOut>0 then
-                    self.OutText = self.OutText.."<<< ИДЕТ  ОБЪЯВЛЕНИЕ >>>"
-                else
-                    self.OutText = self.OutText..Format("%s %02d ",self.Path and "II" or " I",self.RouteNumber)
+                elseif self.State == 5 then
+                    if not ltbl.Loop then
+                        local St = ltbl[self.FirstStation]
+                        local En = ltbl[self.LastStation]
+                        self.OutText = Format("Конечная станция %03d-%s%03d:%s",St[1],CurTime()%1>0.5 and Format("%03d",En[1]) or "   ",En[1],En[2])
+                    end
+                elseif self.State == 6 then
+                    if not ltbl.Loop then
+                        local St = ltbl[self.FirstStation]
+                        local En = ltbl[self.LastStation]
+                        if self.Path then
+                            local StT = En;En=St;St=StT
+                        end
+                        local timer = math.ceil(CurTime()%6/1.5)
+                        local s2 = timer == 1 and (ltbl.Name or "Нет названия") or timer == 2 and Format("От:%s",St[2]) or timer == 3 and Format("До:%s",En[2]) or "\"+-\" выб \"MENU\" ввод"
+                        self.OutText = Format("Проверьте данные   %02d %s%s",self.RouteNumber,self.Path and "II" or " I",s2)
+                    end
+                elseif self.State == 7 then
+                    local En
+                    if self.Path and not ltbl.Loop then
+                        En = ltbl[self.FirstStation]
+                    else
+                        En = ltbl[self.LastStation]
+                    end
+                    self.OutText = self.Arrived and "Отпр. " or "Приб. "
                     for i=1,14 do
-                        if i <= utf8.len(En[2]) then
-                            self.OutText = self.OutText..(i<14 and utf8.GetChar(En[2],i) or ".")
+                        if i <= utf8.len(ltbl[self.Station][2]) then
+                            self.OutText = self.OutText..(i<14 and utf8.GetChar(ltbl[self.Station][2],i) or ".")
                         else
                             self.OutText = self.OutText.." "
                         end
                     end
-                    self.OutText = self.OutText..((Train.VBD and self.K2==0) and "Бл.П" or "    ")
+                    self.OutText = self.OutText..((Train.VBD and self.K1==0) and "Бл.Л" or "    ")
+                    if self.LineOut>0 then
+                        self.OutText = self.OutText.."<<< ИДЕТ  ОБЪЯВЛЕНИЕ >>>"
+                    else
+                        self.OutText = self.OutText..Format("%s %02d ",self.Path and "II" or " I",self.RouteNumber)
+                        for i=1,14 do
+                            if i <= utf8.len(En[2]) then
+                                self.OutText = self.OutText..(i<14 and utf8.GetChar(En[2],i) or ".")
+                            else
+                                self.OutText = self.OutText.." "
+                            end
+                        end
+                        self.OutText = self.OutText..((Train.VBD and self.K2==0) and "Бл.П" or "    ")
+                    end
                 end
             end
         end

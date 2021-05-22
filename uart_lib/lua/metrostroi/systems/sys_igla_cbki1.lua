@@ -32,10 +32,21 @@ function TRAIN_SYSTEM:Initialize()
         self.Train:SetNW2Int("IGLA:BVolt",self.BVolt*10)
     end
     self.OutText = ""
+    self.DispalyOn = 0
 end
 if TURBOSTROI then return end
 function TRAIN_SYSTEM:Inputs()
     return {  "" }
+end
+local function FormatEnd1(num)
+    if num == 1 then return "  "
+    elseif 1 < num and num < 5 then return "а " end
+    return "ов"
+end
+local function FormatEnd2(num)
+    if num == 1 then return "ка"
+    elseif 1 < num and num < 5 then return "ки" end
+    return "ок"
 end
 if CLIENT then
     local Chars = {
@@ -66,16 +77,6 @@ if CLIENT then
         ["\9"]   = Chars[9],
         ["\0"]   = Chars[0],
     }
-    local function FormatEnd1(num)
-        if num == 1 then return " "
-        elseif 1 < num and num < 5 then return "а" end
-        return "ов"
-    end
-    local function FormatEnd2(num)
-        if num == 1 then return "ка"
-        elseif 1 < num and num < 5 then return "ки" end
-        return "ок"
-    end
     function TRAIN_SYSTEM:PrintText(x,y,text,col)
         local str = {utf8.codepoint(text,1,-1)}
         for i=1,#str do
@@ -364,6 +365,8 @@ else
                 self.Error = 0
                 self.States = {}
                 self.Messages = {}
+                self.OutText = ""
+                self.DispalyOn = 0
             end
         end
         if self.State == -2 and Power --[[ and Train.A63.Value > 0.5--]]  then
@@ -470,7 +473,20 @@ else
                 end
                 self.MessagesCount = mess
             end
-
+            
+            if Standby then
+                if self.ShowTime then
+                    self.OutText = os.date("!                    %d-%m-%y    %H:%M:%S",Metrostroi.GetSyncTime())
+                    self.DispalyOn = 1
+                else
+                    self.OutText = ""
+                    self.DispalyOn = 0
+                end
+            else
+                self.OutText = Format("асотп  %d комплект%s %s",count,FormatEnd1(count),os.date("!%d-%m-%y    %H:%M:%S",Metrostroi.GetSyncTime()))
+                self.DispalyOn = 1
+            end
+            
             if self.State2 == 0 then
                 if self.Triggers.IGLA2 and self.Triggers.IGLA3 then
                     self.Password = ""

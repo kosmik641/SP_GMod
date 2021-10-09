@@ -4,6 +4,15 @@
 -- Copyright (C) 2013-2018 Metrostroi Team & FoxWorks Aerospace s.r.o.
 -- Contains proprietary code. See license.txt for additional information.
 --------------------------------------------------------------------------------
+if SERVER then
+    util.AddNetworkString("ASNP.SendText")
+    net.Receive("ASNP.SendText",function()
+        local str = net.ReadString()
+        local trainEnt = net.ReadEntity()
+        if not IsValid(trainEnt) then return end
+        trainEnt.ASNP.OutText = str
+    end)
+end
 Metrostroi.DefineSystem("81_71_ASNP")
 TRAIN_SYSTEM.DontAccelerateSimulation = true
 function TRAIN_SYSTEM:Initialize()
@@ -44,9 +53,6 @@ function TRAIN_SYSTEM:Initialize()
     self.K2 = 0
     --self.Train:LoadSystem("R_Program1","Relay","Switch",{bass = true })
     --self.Train:LoadSystem("R_Program2","Relay","Switch",{bass = true })
-    
-    self.OutText = ""
-    self.DispalyOn = 0
 end
 
 if TURBOSTROI then return end
@@ -86,6 +92,10 @@ if CLIENT then
         })
     end
     createFont("ASNP","Liquid Crystal Display",30,400)
+    function TRAIN_SYSTEM:ClientInitialize(parameters)
+        self.OutText = {}
+        self.OutTextSend = 0
+    end
     function TRAIN_SYSTEM:ClientThink()
     if not self.Train:ShouldDrawPanel("ASNPScreen") then return end
         --RunConsoleCommand("say","президент!!!")
@@ -102,6 +112,22 @@ if CLIENT then
             self:ASNPScreen(self.Train)
         cam.End2D()
         render.PopRenderTarget()
+        if self.Train:GetNW2Bool("UARTWorking") then
+            local strOut = ""
+            if self.Train:GetNW2Int("ASNP:State",-1) ~= 0 then
+                for i=1,48 do
+                    strOut = strOut..(self.OutText[i] or " ")
+                end
+            end
+            self.OutText = {}
+            if CurTime() > self.OutTextSend then
+                self.OutTextSend = CurTime() + 0.1
+                net.Start("ASNP.SendText")
+                    net.WriteString(strOut)
+                    net.WriteEntity(self.Train)
+                net.SendToServer()
+            end
+        end
     end
     function TRAIN_SYSTEM:PrintText(x,y,text,inverse)
         if text == "II" then
@@ -113,9 +139,11 @@ if CLIENT then
         for i=1,#str do
             local char = utf8.char(str[i])
             if inverse then
+                self.OutText[x+y*24+i] = char
                 draw.SimpleText(string.char(0x7f),"Metrostroi_ASNP",(x+i)*20.5+5,y*40+40,Color(0,0,0),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
                 draw.SimpleText(char,"Metrostroi_ASNP",(x+i)*20.5+5,y*40+40,Color(140,190,0,150),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
             else
+                self.OutText[x+y*24+i] = char
                 draw.SimpleText(char,"Metrostroi_ASNP",(x+i)*20.5+5,y*40+40,Color(0,0,0),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
             end
         end
@@ -436,7 +464,7 @@ function TRAIN_SYSTEM:Play(dep,not_last)
 
     self:AnnQueue(message)
     --local stbl = Metrostroi.ASNPSetup[self.Train:GetNW2Int("Announcer",1)][self.Line][self.Station]
-    if self.LastStation > 0 and not dep and self.Station ~= last and tbl[last].not_last and (stbl.have_inrerchange or math.abs(last-self.Station) <= 3) then
+    if self.LastStation > 0 and not dep and self.Station ~= last and tbl[last].not_last and (stbl.have_interchange or math.abs(last-self.Station) <= 3) then
         local ltbl = tbl[last]
         if stbl.not_last_c then
             local patt = stbl.not_last_c[path]
@@ -759,16 +787,13 @@ function TRAIN_SYSTEM:Think()
         self.State = 0
         self.ASNPTimer = nil
         if self.LineOut>0 then self:AnnQueue{-2,"buzz_end","click2"} end
-        self.OutText = ""
-        self.DispalyOn = 0
     end
     if Power and self.State == 0 then
         self.State = -1
         self.ASNPTimer = CurTime()-math.Rand(-0.3,0.3)
-        self.DispalyOn = 1
     end
     if self.State == -1 and self.ASNPTimer and CurTime()-self.ASNPTimer > 1 then
-        self.State = Metrostroi.ASNPSetup and 1 or -2
+        self.State = Metrostroi.ASNPSetup and #Metrostroi.ASNPSetup > 0 and 1 or -2
     end
     if Power and self.State > -1  then
         for k,v in pairs(self.TriggerNames) do
@@ -777,85 +802,8 @@ function TRAIN_SYSTEM:Think()
                 self.Triggers[v] = Train[v].Value > 0.5
             end
         end
-        if Metro81717Signals.Initialized and Autospawn.HeadWagon == Train then
-            if not Metrostroi.ASNPSetup[self.Train:GetNW2Int("Announcer",1)] then
-                self.OutText = "       МЕТРОКОМ-М"
-            else
-                local ltbl = Metrostroi.ASNPSetup[self.Train:GetNW2Int("Announcer",1)][self.Line]
-                if self.State == 1 then
-                    self.OutText = "Нажмите \"MENU\"          для начала настройки" 
-                elseif self.State == 2 then
-                    local num = Format("%02d",self.RouteNumber)
-                    if self.Selected == 0 then
-                        self.OutText = Format("Номер маршрута:         %s%s  \"+-\" выб \"MENU\" след",CurTime()%1>0.5 and num[1] or " ",num[2])
-                    elseif self.Selected == 1 then
-                        self.OutText = Format("Номер маршрута:         %s%s  \"+-\" выб \"MENU\" след",num[1],CurTime()%1>0.5 and num[2] or " ")
-                    elseif self.Selected == 2 then
-                        self.OutText = Format("Номер маршрута:         %s  \"+-\" отм \"MENU\" ввод",num)
-                    end
-                elseif self.State == 3 then
-                    local St,En = ltbl[1],ltbl[#ltbl]
-                    local timer = math.ceil(CurTime()%6/1.5)
-                    local s2 = timer == 1 and (ltbl.Name or "Нет названия") or timer == 2 and Format("От:%s",St[2]) or timer == 3 and Format("До:%s",En[2]) or "\"+-\" выб \"MENU\" ввод"
-                    self.OutText = Format("%s    %s%s",ltbl.Loop and "Маршрут (кол)" or "Маршрут      ",CurTime()%1>0.5 and Format("%03d-%03d",St[1],En[1]) or "   -   ",s2)
-                elseif self.State == 4 then
-                    if not ltbl.Loop then
-                        local St = ltbl[self.FirstStation]
-                        self.OutText = Format("Начальная ст.    %s-   %03d:%s",CurTime()%1>0.5 and Format("%03d",St[1]) or "   ",St[1],St[2])
-                    end
-                elseif self.State == 5 then
-                    if not ltbl.Loop then
-                        local St = ltbl[self.FirstStation]
-                        local En = ltbl[self.LastStation]
-                        self.OutText = Format("Конечная станция %03d-%s%03d:%s",St[1],CurTime()%1>0.5 and Format("%03d",En[1]) or "   ",En[1],En[2])
-                    end
-                elseif self.State == 6 then
-                    if not ltbl.Loop then
-                        local St = ltbl[self.FirstStation]
-                        local En = ltbl[self.LastStation]
-                        if self.Path then
-                            local StT = En;En=St;St=StT
-                        end
-                        local timer = math.ceil(CurTime()%6/1.5)
-                        local s2 = timer == 1 and (ltbl.Name or "Нет названия") or timer == 2 and Format("От:%s",St[2]) or timer == 3 and Format("До:%s",En[2]) or "\"+-\" выб \"MENU\" ввод"
-                        self.OutText = Format("Проверьте данные   %02d %s%s",self.RouteNumber,self.Path and "II" or " I",s2)
-                    end
-                elseif self.State == 7 then
-                    local En
-                    if self.Path and not ltbl.Loop then
-                        En = ltbl[self.FirstStation]
-                    else
-                        En = ltbl[self.LastStation]
-                    end
-                    self.OutText = self.Arrived and "Отпр. " or "Приб. "
-                    for i=1,14 do
-                        if i <= utf8.len(ltbl[self.Station][2]) then
-                            self.OutText = self.OutText..(i<14 and utf8.GetChar(ltbl[self.Station][2],i) or ".")
-                        else
-                            self.OutText = self.OutText.." "
-                        end
-                    end
-                    self.OutText = self.OutText..((Train.VBD and self.K1==0) and "Бл.Л" or "    ")
-                    if self.LineOut>0 then
-                        self.OutText = self.OutText.."<<< ИДЕТ  ОБЪЯВЛЕНИЕ >>>"
-                    else
-                        self.OutText = self.OutText..Format("%s %02d ",self.Path and "II" or " I",self.RouteNumber)
-                        for i=1,14 do
-                            if i <= utf8.len(En[2]) then
-                                self.OutText = self.OutText..(i<14 and utf8.GetChar(En[2],i) or ".")
-                            else
-                                self.OutText = self.OutText.." "
-                            end
-                        end
-                        self.OutText = self.OutText..((Train.VBD and self.K2==0) and "Бл.П" or "    ")
-                    end
-                end
-            end
-        end
-        
     end
-    
-    if not Metrostroi.ASNPSetup and self.State > 0 then
+    if (not Metrostroi.ASNPSetup or Metrostroi.ASNPSetup and #Metrostroi.ASNPSetup == 0) and self.State > 0 then
         self.State = -2
     end
     local PSWork = Train.Panel.PassSchemeControl and Train.Panel.PassSchemeControl>0 and self.State==7

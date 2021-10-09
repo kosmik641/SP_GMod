@@ -4,6 +4,15 @@
 -- Copyright (C) 2013-2018 Metrostroi Team & FoxWorks Aerospace s.r.o.
 -- Contains proprietary code. See license.txt for additional information.
 --------------------------------------------------------------------------------
+if SERVER then
+    util.AddNetworkString("IGLA.SendText")
+    net.Receive("IGLA.SendText",function()
+        local str = net.ReadString()
+        local trainEnt = net.ReadEntity()
+        if not IsValid(trainEnt) then return end
+        trainEnt.IGLA_CBKI.OutText = str
+    end)
+end
 Metrostroi.DefineSystem("IGLA_CBKI1")
 TRAIN_SYSTEM.DontAccelerateSimulation = true
 
@@ -31,22 +40,10 @@ function TRAIN_SYSTEM:Initialize()
         self.BVolt = 3.0+math.random()*0.4
         self.Train:SetNW2Int("IGLA:BVolt",self.BVolt*10)
     end
-    self.OutText = ""
-    self.DispalyOn = 0
 end
 if TURBOSTROI then return end
 function TRAIN_SYSTEM:Inputs()
     return {  "" }
-end
-local function FormatEnd1(num)
-    if num == 1 then return "  "
-    elseif 1 < num and num < 5 then return "а " end
-    return "ов"
-end
-local function FormatEnd2(num)
-    if num == 1 then return "ка"
-    elseif 1 < num and num < 5 then return "ки" end
-    return "ок"
 end
 if CLIENT then
     local Chars = {
@@ -77,6 +74,16 @@ if CLIENT then
         ["\9"]   = Chars[9],
         ["\0"]   = Chars[0],
     }
+    local function FormatEnd1(num)
+        if num == 1 then return " "
+        elseif 1 < num and num < 5 then return "а" end
+        return "ов"
+    end
+    local function FormatEnd2(num)
+        if num == 1 then return "ка"
+        elseif 1 < num and num < 5 then return "ки" end
+        return "ок"
+    end
     function TRAIN_SYSTEM:PrintText(x,y,text,col)
         local str = {utf8.codepoint(text,1,-1)}
         for i=1,#str do
@@ -86,7 +93,12 @@ if CLIENT then
                 draw.SimpleText(char,"MetrostroiSubway_IGLAb",-8+(x+i)*25,30+y*43+1,ColorAlpha(col,alpha*0.08),TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
             end
             draw.SimpleText(char,"MetrostroiSubway_IGLA",-8+(x+i)*25,30+y*43,col,TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+            self.OutText[x+y*20+i] = str[i] == 9608 and " " or char
         end
+    end
+    function TRAIN_SYSTEM:ClientInitialize(parameters)
+        self.OutText = {}
+        self.OutTextSend = 0
     end
   function TRAIN_SYSTEM:ClientThink()
     if not self.Train:ShouldDrawPanel("IGLA") then return end
@@ -104,6 +116,22 @@ if CLIENT then
         self:IGLA(self.Train)
     cam.End2D()
     render.PopRenderTarget()
+    if self.Train:GetNW2Bool("UARTWorking") then
+        local strOut = ""
+        if not self.Train:GetNW2Bool("IGLA:Standby") or self.Train:GetNW2Bool("IGLA:ShowTime") then
+            for i=1,40 do
+                strOut = strOut..(self.OutText[i] or " ")
+            end
+        end
+        self.OutText = {}
+        if CurTime() > self.OutTextSend then
+            self.OutTextSend = CurTime() + 0.1
+            net.Start("IGLA.SendText")
+                net.WriteString(strOut)
+                net.WriteEntity(self.Train)
+            net.SendToServer()
+        end
+    end
   end
 
     local messages = {
@@ -365,8 +393,6 @@ else
                 self.Error = 0
                 self.States = {}
                 self.Messages = {}
-                self.OutText = ""
-                self.DispalyOn = 0
             end
         end
         if self.State == -2 and Power --[[ and Train.A63.Value > 0.5--]]  then
@@ -473,20 +499,7 @@ else
                 end
                 self.MessagesCount = mess
             end
-            
-            if Standby then
-                if self.ShowTime then
-                    self.OutText = os.date("!                    %d-%m-%y    %H:%M:%S",Metrostroi.GetSyncTime())
-                    self.DispalyOn = 1
-                else
-                    self.OutText = ""
-                    self.DispalyOn = 0
-                end
-            else
-                self.OutText = Format("асотп  %d комплект%s %s",count,FormatEnd1(count),os.date("!%d-%m-%y    %H:%M:%S",Metrostroi.GetSyncTime()))
-                self.DispalyOn = 1
-            end
-            
+
             if self.State2 == 0 then
                 if self.Triggers.IGLA2 and self.Triggers.IGLA3 then
                     self.Password = ""

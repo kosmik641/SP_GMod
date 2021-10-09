@@ -1,235 +1,158 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include "Interface.h"
-#include <windows.h>
-#include <string>
+#include "main.h"
+#define xCont Glob::mainContainer
+std::map<std::string, std::map<std::string, double>> xCont;
+CRITICAL_SECTION Glob::UARTFrontViewClient::m_SignalCriticalSection;
 
-//#include <fcntl.h>
-//#include <io.h>
-//void CreateConsole()
-//{
-//	int hConHandle = 0;
-//	HANDLE lStdHandle = 0;
-//  FILE* fp = 0;
-//	AllocConsole();
-//	freopen("CON", "w", stdout);
-//	SetConsoleTitle(L"UART Console");
-//	HWND hwnd = ::GetConsoleWindow();
-//	if (hwnd != NULL)
-//	{
-//		HMENU hMenu = ::GetSystemMenu(hwnd, FALSE);
-//		if (hMenu != NULL)
-//		{
-//			DeleteMenu(hMenu, SC_CLOSE, MF_BYCOMMAND);
-//			DeleteMenu(hMenu, SC_MINIMIZE, MF_BYCOMMAND);
-//			DeleteMenu(hMenu, SC_MAXIMIZE, MF_BYCOMMAND);
-//		}
-//	}
-//	lStdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-//	hConHandle = _open_osfhandle(PtrToUlong(lStdHandle), _O_TEXT);
-//	fp = _fdopen(hConHandle, "w");
-//	*stdout = *fp;
-//	setvbuf(stdout, NULL, _IONBF, 0);
-//}
+LUA_FUNCTION_STATIC(API_ReceiveBtnTable)
+{
+	if (!Glob::UARTFrontViewClient::threadWorking()) return 0;
+	LUA->CheckType(1, GarrysMod::Lua::Type::Table);
+	LUA->CheckString(2);
+	LUA->CheckString(3);
+	LUA->PushNil();
+	while (LUA->Next(1) != 0) {
+		xCont["Output"][LUA->GetString(-2)] = LUA->GetNumber(-1);
+		LUA->Pop();
+	}
+	Glob::UTF8_2_1251(LUA->GetString(2), (char*)Glob::ASNPText, 98);
+	Glob::UTF8_2_1251(LUA->GetString(3), (char*)Glob::ASOTPText, 80);
+	Glob::UARTFrontViewClient::Metro81717Signals::outSignals();
+	return 0;
+}
 
-/*
-В return функции возвращается количество возвращаемых в Lua объектов
-*/
+LUA_FUNCTION_STATIC(API_SendBtnTable)
+{
+	if (!Glob::UARTFrontViewClient::threadWorking()) return 0;
+	Glob::UARTFrontViewClient::Metro81717Signals::inSignals();
 
-#define PushCLua( _function, _name ) LUA->PushCFunction(_function); LUA->SetField(-2, _name);
+	LUA->CreateTable();
+	for (auto it = xCont["Input"].begin(); it != xCont["Input"].end(); ++it) {
+		LUA->PushString((it->first).c_str());
+		LUA->PushNumber(it->second);
+		LUA->RawSet(-3);
+	}
+	return 1;
+}
 
-using namespace GarrysMod::Lua;
-HANDLE m_HCOM;
-int comState = -10;
+LUA_FUNCTION_STATIC(API_SendBtnTableByKey)
+{
+	LUA->CheckString(1);
+	LUA->CheckString(2);
+	bool locking = false;
+	if (Glob::UARTFrontViewClient::threadWorking()) { EnterCriticalSection(&(Glob::UARTFrontViewClient::m_SignalCriticalSection)); locking = true; };
+	const char* str1 = LUA->GetString(1);
+	const char* str2 = LUA->GetString(2);
+	int retVal = xCont[str1][str2];
+	if (locking) LeaveCriticalSection(&(Glob::UARTFrontViewClient::m_SignalCriticalSection));
+	LUA->PushNumber(retVal);
+	return 1;
+}
 
-int Version(lua_State* state)
+LUA_FUNCTION_STATIC(API_InitUART)
+{
+	if (Glob::UARTFrontViewClient::threadWorking()) return 0;
+	int RetVal = -10;
+	LUA->CheckNumber(1);
+	int portNumber = LUA->GetNumber(1);
+	RetVal = Glob::UARTFrontViewClient::Metro81717Signals::startSignals(portNumber);
+	LUA->PushNumber(RetVal);
+	return 1;
+}
+
+LUA_FUNCTION_STATIC(API_Shutdown)
+{
+	if (!Glob::UARTFrontViewClient::threadWorking()) return 0;
+	Glob::UARTFrontViewClient::Metro81717Signals::stopSignals();
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(API_GetThreadStatus) {
+	LUA->PushBool(Glob::UARTFrontViewClient::threadWorking());
+	return 1;
+}
+
+LUA_FUNCTION(API_Version)
 {
 	char date_str[30];
-	sprintf_s(date_str, "Bulded %s %s",__TIME__,__DATE__);
+	sprintf_s(date_str, "Bulded %s %s", __TIME__, __DATE__);
 	LUA->PushString(date_str);
 	return 1;
-}
-
-int GetCOMState(lua_State* state)
-{
-	LUA->PushNumber(comState);
-	return 1;
-}
-
-int WriteByte(lua_State* state)
-{
-	unsigned int Bytes_To_Send = LUA->GetNumber(2); // Количество входящих байт
-	byte* Input_Bytes = new byte[Bytes_To_Send + 2];
-	if (LUA->IsType(1, Type::TABLE)) // Проверяем, что первый параметр - таблица
-	{
-		unsigned int Input_Bytes_Index = 0;
-		LUA->PushNil(); // Первый ключ
-		// Функция lua_next перебирает все пары "ключ"-"значение" в таблице,
-		// Вторым параметром указывается индекс в стеке, по которому расположен массив (таблица Lua)
-
-		while (LUA->Next(1) != 0) {
-			// в паре "ключ" находится по индексу -2, "значение" находится по индексу -1
-			Input_Bytes[Input_Bytes_Index++] = (byte)LUA->GetNumber(-1);
-			LUA->Pop(1);// освобождает стек для следующей итерации
-		}
-	}
-	
-	DWORD WrBytes = 0;
-	WriteFile(m_HCOM, Input_Bytes,(DWORD)Bytes_To_Send, &WrBytes, NULL);
-	delete[] Input_Bytes;
-
-	return 0;
-}
-
-int ReadByte(lua_State* state)
-{
-	int Nmb_Of_Input_Bytes = LUA->GetNumber(1);
-	byte* Input_Bytes = new byte[Nmb_Of_Input_Bytes + 2]();
-	
-	DWORD Read_Len = 0;
-	ReadFile(m_HCOM, Input_Bytes, Nmb_Of_Input_Bytes, &Read_Len, NULL);
-	PurgeComm(m_HCOM, PURGE_RXCLEAR);
-
-	LUA->Top();
-	LUA->CreateTable();
-	for (int i = 0; i < Nmb_Of_Input_Bytes; i++) {
-		LUA->PushNumber(i); // Кладем индекс
-		LUA->PushNumber(Input_Bytes[i]); // Значение по индексу
-		LUA->RawSet(-3); // Закидываем в таблицу
-	}
-	
-	delete[] Input_Bytes;
-
-	return 1;
-}
-
-int StartCOM(lua_State* state)
-{
-	int a_portNumber = LUA->GetNumber(1);
-
-	// UARTFrontViewClient.cpp
-	wchar_t port_numb_str[14];
-
-	wsprintfW(port_numb_str, L"\\\\.\\COM%d", a_portNumber);
-	m_HCOM = CreateFile(port_numb_str, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
-	Sleep(250);
-	if (m_HCOM == INVALID_HANDLE_VALUE)
-	{
-		comState = -1;
-		LUA->PushNumber(comState);
-		return 1;
-	}
-	else
-	{
-		DCB DCB_;
-		int Sys = GetCommState(m_HCOM, &DCB_);
-
-		if (Sys == 0)
-		{
-			comState = -2;
-			LUA->PushNumber(comState);
-			return 1;
-		}
-
-		DCB_.BaudRate = (DWORD)115200;
-		DCB_.ByteSize = 8;
-		DCB_.Parity = NOPARITY;
-		DCB_.StopBits = ONESTOPBIT;
-		Sys = SetCommState(m_HCOM, &DCB_);
-
-		if (Sys == 0)
-		{
-			comState = -3;
-			LUA->PushNumber(comState);
-			return 1;
-		}
-
-		SetCommMask(m_HCOM, EV_TXEMPTY);
-
-		COMMTIMEOUTS Timeout;
-		GetCommTimeouts(m_HCOM, &Timeout);
-		Timeout.ReadIntervalTimeout = MAXDWORD;
-		Timeout.ReadTotalTimeoutMultiplier = 0;
-		Timeout.ReadTotalTimeoutConstant = 100;
-		Timeout.WriteTotalTimeoutMultiplier = 0;
-		Timeout.WriteTotalTimeoutConstant = 1000;
-		SetCommTimeouts(m_HCOM, &Timeout);
-
-		SetupComm(m_HCOM, 1000, 1000);
-
-		byte* Detect_Command = new byte[2];
-		Detect_Command[0] = 0x00;
-		Detect_Command[1] = 0x80;
-
-		byte* Answer = new byte[1];
-		byte Right_Answer = 0x66;
-
-		DWORD Wr_Len = 0;
-		DWORD Read_Len = 0;
-
-		WriteFile(m_HCOM, Detect_Command, 2, &Wr_Len, NULL);
-
-		ReadFile(m_HCOM, Answer, 1, &Read_Len, NULL);
-		Read_Len = 0;
-
-		if (Answer[0] == Right_Answer)
-		{
-			//CreateConsole();
-			//printf("====== Connected to COM%d ======\n", a_portNumber);
-			comState = 0;
-			LUA->PushNumber(comState);
-			return 1;
-		}
-		else
-		{
-			PurgeComm(m_HCOM, PURGE_TXCLEAR | PURGE_RXCLEAR);
-			CloseHandle(m_HCOM);
-			m_HCOM = NULL;
-			comState = -4;
-			LUA->PushNumber(comState);
-			return 1;
-		}
-	}
-
-	LUA->PushNumber(comState);
-	return 1;
-}
-
-int StopCOM(lua_State* state)
-{
-	if (!((m_HCOM == INVALID_HANDLE_VALUE) || (m_HCOM == NULL)))
-	{
-		PurgeComm(m_HCOM, PURGE_TXCLEAR | PURGE_RXCLEAR);
-		CloseHandle(m_HCOM);
-		m_HCOM = NULL;
-		comState = -10;
-	}
-	return 0;
 }
 
 // Called when the module opens
 GMOD_MODULE_OPEN()
 {
+	AllocConsole();
+	freopen("CONOUT$", "w", stdout);
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-		LUA->CreateTable();
-			PushCLua(Version, "Version"); // string UART.Version()
-			PushCLua(StartCOM, "StartCOM"); // int UART.StartCOM(port)
-			PushCLua(StopCOM, "StopCOM"); // int UART.StopCOM()
-			PushCLua(WriteByte, "WriteByte"); // UART.WriteByte(table Bytes, int nBytes)
-			PushCLua(ReadByte, "ReadByte"); // string UART.ReadByte(int bytesToRead)
-			PushCLua(GetCOMState, "GetCOMState"); // int UART.GetCOMState()
-		LUA->SetField(-2, "UART");
+	LUA->CreateTable();
+	PushCLua(API_InitUART, "Initialize");		// int UART.Initialize()
+	PushCLua(API_ReceiveBtnTable, "Send");		// UART.Send(table)
+	PushCLua(API_SendBtnTable, "Get");			// table UART.Get()
+	PushCLua(API_SendBtnTableByKey, "GetByKey");// int UART.GetByKey(string,string)
+	PushCLua(API_GetThreadStatus, "Status");	// bool UART.Status()
+	PushCLua(API_Shutdown, "Shutdown");			// UART.Shutdown()
+	PushCLua(API_Version, "Version");			// string UART.Version()
+	LUA->SetField(-2, "UART");
 	LUA->Pop();
 
-	//CreateConsole();
-	
 	return 0;
 }
 // Called when the module closes
 GMOD_MODULE_CLOSE()
 {
-	PurgeComm(m_HCOM, PURGE_TXCLEAR | PURGE_RXCLEAR);
-	CloseHandle(m_HCOM);
-	m_HCOM = NULL;
+	LUA->PushNil();
+	LUA->SetField(GarrysMod::Lua::INDEX_GLOBAL, "UART");
 	return 0;
+}
+
+int Glob::UTF8_2_1251(const char* utf8, char* windows1251, size_t n)
+{
+	int i = 0;
+	int j = 0;
+	for (; i < (int)n && utf8[i] != 0; ++i) {
+		char prefix = utf8[i];
+		char suffix = utf8[i + 1];
+		if ((prefix & 0x80) == 0) {
+			windows1251[j] = (char)prefix;
+			++j;
+		}
+		else if ((~prefix) & 0x20) {
+			int first5bit = prefix & 0x1F;
+			first5bit <<= 6;
+			int sec6bit = suffix & 0x3F;
+			int unicode_char = first5bit + sec6bit;
+			if (unicode_char >= 0x410 && unicode_char <= 0x44F) {
+				windows1251[j] = (char)(unicode_char - 0x350);
+			}
+			else if (unicode_char >= 0x80 && unicode_char <= 0xFF) {
+				windows1251[j] = (char)(unicode_char);
+			}
+			else if (unicode_char >= 0x402 && unicode_char <= 0x403) {
+				windows1251[j] = (char)(unicode_char - 0x382);
+			}
+			else {
+				int count = sizeof(g_letters) / sizeof(Letter);
+				for (int k = 0; k < count; ++k) {
+					if (unicode_char == g_letters[k].unicode) {
+						windows1251[j] = g_letters[k].win1251;
+						goto NEXT_LETTER;
+					}
+				}
+				// can't convert this char
+				printf("ERROR: Cant convert char №%d\n",j);
+				return 0;
+			}
+		NEXT_LETTER:
+			++i;
+			++j;
+		}
+		else {
+			// can't convert this chars
+			printf("ERROR: Cant convert input string\n");
+			return 0;
+		}
+	}
+	windows1251[j] = 0;
+	return 1;
 }

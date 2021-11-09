@@ -15,6 +15,7 @@ namespace Glob {
 	extern std::map<std::string, std::map<std::string, double>> mainContainer;
 	extern byte ASNPText[50];
 	extern byte ASOTPText[50];
+	extern bool debugInfo;
 
 	int UTF8_2_1251(const char* utf8, char* windows1251, size_t n);
 	struct Letter {

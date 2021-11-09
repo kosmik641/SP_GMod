@@ -19,108 +19,142 @@ void M717::readAdc1Config()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("stopcrane.txt");
-
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Adc1c[i] = std::stoi(STRING);
+	infile.open("uart_config\\stopcrane.txt");
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Adc1c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"stopcrane.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readAdc2Config()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("km013.txt");
-
-	for (int i = 0; i < 7; i++) {
-		std::getline(infile, STRING);
-		configValues.Adc2c[i] = std::stoi(STRING);
+	infile.open("uart_config\\km013.txt");
+	if (infile.is_open()) {
+		for (int i = 0; i < 7; i++) {
+			std::getline(infile, STRING);
+			configValues.Adc2c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"km013.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readAdc3Config()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("kv70.txt");
-
-	for (int i = 0; i < 7; i++) {
-		std::getline(infile, STRING);
-		configValues.Adc3c[i] = std::stoi(STRING);
+	infile.open("uart_config\\kv70.txt");
+	
+	if (infile.is_open()) {
+		for (int i = 0; i < 7; i++) {
+			std::getline(infile, STRING);
+			configValues.Adc3c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"kv70.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readTCConfig()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("ArrowTC.txt");
+	infile.open("uart_config\\ArrowTC.txt");
 
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Step1c[i] = std::stoi(STRING);
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Step1c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"ArrowTC.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readNMConfig()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("ArrowNM.txt");
+	infile.open("uart_config\\ArrowNM.txt");
 
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Step2c[i] = std::stoi(STRING);
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Step2c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"ArrowNM.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readTMConfig()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("ArrowTM.txt");
+	infile.open("uart_config\\ArrowTM.txt");
 
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Step3c[i] = std::stoi(STRING);
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Step3c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"ArrowTM.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readAmpermeterConfig()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("ArrowAmper.txt");
+	infile.open("uart_config\\ArrowAmper.txt");
 
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Step4c[i] = std::stoi(STRING);
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Step4c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"ArrowAmper.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readKiloVoltmeterConfig()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("ArrowKiloVolt.txt");
+	infile.open("uart_config\\ArrowKiloVolt.txt");
 
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Step5c[i] = std::stoi(STRING);
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Step5c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"ArrowKiloVolt.txt\" config file\n");
+	infile.close();
 }
 
 void M717::readVoltmeterConfig()
 {
 	std::string STRING;
 	std::ifstream infile;
-	infile.open("ArrowVolt.txt");
+	infile.open("uart_config\\ArrowVolt.txt");
 
-	for (int i = 0; i < 2; i++) {
-		std::getline(infile, STRING);
-		configValues.Step6c[i] = std::stoi(STRING);
+	if (infile.is_open()) {
+		for (int i = 0; i < 2; i++) {
+			std::getline(infile, STRING);
+			configValues.Step6c[i] = std::stoi(STRING);
+		}
 	}
+	else printf("Coundn't find \"ArrowVolt.txt\" config file\n");
+	infile.close();
 }
 
 
@@ -767,11 +801,11 @@ int M717::Adc3(int adc)
 	else if (adc > (configValues.Adc3c[2] + configValues.Adc3c[3]) / 2 && (adc <= (configValues.Adc3c[3] + configValues.Adc3c[4]) / 2))
 		res = 0;
 	else if (adc > (configValues.Adc3c[3] + configValues.Adc3c[4]) / 2 && (adc <= (configValues.Adc3c[4] + configValues.Adc3c[5]) / 2))
-		res = 1;
+		res = -1;
 	else if (adc > (configValues.Adc3c[4] + configValues.Adc3c[5]) / 2 && (adc <= (configValues.Adc3c[5] + configValues.Adc3c[6]) / 2))
-		res = 2;
+		res = -2;
 	else if (adc > (configValues.Adc3c[5] + configValues.Adc3c[6]) / 2)
-		res = 3;
+		res = -3;
 	return res;
 }
 int M717::Step1(double step) // Тормозной цилиндр
@@ -791,7 +825,7 @@ int M717::Step3(double step) // Тормозная магистраль
 }
 int M717::Step4(double step) // Амперметр
 {
-	int res = ((double)configValues.Step4c[1] - (double)configValues.Step4c[0]) * step / 1000.0 + (double)configValues.Step4c[0];
+	int res = ((double)configValues.Step4c[1] - (double)configValues.Step4c[0]) * (step / 1000.0) + 500.0 + (double)configValues.Step4c[0];
 	return res;
 }
 int M717::Step5(double step) // Киловольтметр
@@ -976,6 +1010,7 @@ void M717::update()
 	inHardwareSignals.stopCrane = 0;//Adc1(ADC_Signals[0]);
 	inHardwareSignals.KM013 = Adc2(ADC_Signals[1]);
 	inHardwareSignals.mainController = Adc3(ADC_Signals[2]);
+	if (Glob::debugInfo) printf("%d\t%d\t%d\n", ADC_Signals[0], ADC_Signals[1], ADC_Signals[2]);
 	//inHardwareSignals.ADC3Value = ADC_Signals[2];
 	inHardwareSignals.reverseController = Input_Signals[79] - Input_Signals[78];
 

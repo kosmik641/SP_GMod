@@ -13,6 +13,117 @@ M717::CircuitBrakersOn M717::circuitBrakersOn;
 M717::CircuitBrakersOff M717::circuitBrakersOff;
 M717::InHardwareSignals M717::inHardwareSignals;
 M717::OutHardwareSignals M717::outHardwareSignals;
+M717::ConfigValues M717::configValues;
+
+void M717::readAdc1Config()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("stopcrane.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Adc1c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readAdc2Config()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("km013.txt");
+
+	for (int i = 0; i < 7; i++) {
+		std::getline(infile, STRING);
+		configValues.Adc2c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readAdc3Config()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("kv70.txt");
+
+	for (int i = 0; i < 7; i++) {
+		std::getline(infile, STRING);
+		configValues.Adc3c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readTCConfig()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("ArrowTC.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Step1c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readNMConfig()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("ArrowNM.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Step2c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readTMConfig()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("ArrowTM.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Step3c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readAmpermeterConfig()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("ArrowAmper.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Step4c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readKiloVoltmeterConfig()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("ArrowKiloVolt.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Step5c[i] = std::stoi(STRING);
+	}
+}
+
+void M717::readVoltmeterConfig()
+{
+	std::string STRING;
+	std::ifstream infile;
+	infile.open("ArrowVolt.txt");
+
+	for (int i = 0; i < 2; i++) {
+		std::getline(infile, STRING);
+		configValues.Step6c[i] = std::stoi(STRING);
+	}
+}
+
+
 
 int M717::startSignals(int a_port)
 {
@@ -24,6 +135,18 @@ int M717::startSignals(int a_port)
 		//MessageBox(NULL, msg, L"Ошибка подключения", 0);
 		return retVal;
 	}
+
+	// чтение файлов с калибровочными данными
+	//readAdc1Config();
+	readAdc2Config();
+	readAdc3Config();
+
+	readTCConfig();
+	readNMConfig();
+	readTMConfig();
+	readAmpermeterConfig();
+	readKiloVoltmeterConfig();
+	readVoltmeterConfig();
 
 	InitConfArrays();
 	ConfigSignals();
@@ -601,153 +724,84 @@ void M717::InitConfArrays()
 	*/
 }
 
-auto M717::Adc1(int adc) -> int const
+int M717::Adc1(int adc)
 {
-	auto res = 0;
-	/*if (adc > 2000)
+	int res = 0;
+	if (adc > configValues.Adc1c[0])
 		res = 0;
-	else if (adc < 500)
-		res = 1;*/
+	else if (adc < configValues.Adc1c[1])
+		res = 1;
 
 	return res;
 }
-auto M717::Adc2(int adc) -> int const
+int M717::Adc2(int adc)
 {
-	auto res = 1;
-	auto const pos_0 = 780;
-	auto const pos_1 = 1353;
-	auto const pos_2 = 1896;
-	auto const pos_3 = 2120;
-	auto const pos_4 = 2325;
-	auto const pos_5 = 2860;
-	auto const pos_6 = 3265;
+	int res = 1;
 
-	if (adc <= (pos_0 + pos_1) / 2)
+	if (adc <= (configValues.Adc2c[0] + configValues.Adc2c[1]) / 2)
 		res = 1;
-	else if (adc > (pos_0 + pos_1) / 2 && adc <= (pos_1 + pos_2) / 2)
+	else if (adc > (configValues.Adc2c[0] + configValues.Adc2c[1]) / 2 && adc <= (configValues.Adc2c[1] + configValues.Adc2c[2]) / 2)
 		res = 2;
-	else if (adc > (pos_1 + pos_2) / 2 && (adc <= (pos_2 + pos_3) / 2))
+	else if (adc > (configValues.Adc2c[1] + configValues.Adc2c[2]) / 2 && (adc <= (configValues.Adc2c[2] + configValues.Adc2c[3]) / 2))
 		res = 3;
-	else if (adc > (pos_2 + pos_3) / 2 && (adc <= (pos_3 + pos_4) / 2))
+	else if (adc > (configValues.Adc2c[2] + configValues.Adc2c[3]) / 2 && (adc <= (configValues.Adc2c[3] + configValues.Adc2c[4]) / 2))
 		res = 4;
-	else if (adc > (pos_3 + pos_4) / 2 && (adc <= (pos_4 + pos_5) / 2))
+	else if (adc > (configValues.Adc2c[3] + configValues.Adc2c[4]) / 2 && (adc <= (configValues.Adc2c[4] + configValues.Adc2c[5]) / 2))
 		res = 5;
-	else if (adc > (pos_4 + pos_5) / 2 && (adc <= (pos_5 + pos_6) / 2))
+	else if (adc > (configValues.Adc2c[4] + configValues.Adc2c[5]) / 2 && (adc <= (configValues.Adc2c[5] + configValues.Adc2c[6]) / 2))
 		res = 6;
-	else if (adc > (pos_5 + pos_6) / 2)
+	else if (adc > (configValues.Adc2c[5] + configValues.Adc2c[6]) / 2)
 		res = 7;
 
 	return res;
 }
-auto M717::Adc3(int adc) -> int const
+int M717::Adc3(int adc)
 {
-	auto res = 0;
-	auto const pos_III = 265;
-	auto const pos_II = 495;
-	auto const pos_I = 655;
-	auto const pos_0 = 828;
-	auto const pos_T1a = 980;
-	auto const pos_T1b = 1142;
-	auto const pos_T2 = 1361;//его вообще нет
-
-	if (adc <= (pos_III + pos_II) / 2)
+	int res = 0;
+	if (adc <= (configValues.Adc3c[0] + configValues.Adc3c[1]) / 2)
 		res = 3;
-	else if (adc > (pos_III + pos_II) / 2 && adc <= (pos_II + pos_I) / 2)
+	else if (adc > (configValues.Adc3c[0] + configValues.Adc3c[1]) / 2 && adc <= (configValues.Adc3c[1] + configValues.Adc3c[2]) / 2)
 		res = 2;
-	else if (adc > (pos_II + pos_I) / 2 && adc <= (pos_I + pos_0) / 2)
+	else if (adc > (configValues.Adc3c[1] + configValues.Adc3c[2]) / 2 && (adc <= (configValues.Adc3c[2] + configValues.Adc3c[3]) / 2))
 		res = 1;
-	else if (adc > (pos_I + pos_0) / 2 && adc <= (pos_0 + pos_T1a) / 2)
+	else if (adc > (configValues.Adc3c[2] + configValues.Adc3c[3]) / 2 && (adc <= (configValues.Adc3c[3] + configValues.Adc3c[4]) / 2))
 		res = 0;
-	else if (adc > (pos_0 + pos_T1a) / 2 && adc <= (pos_T1a + pos_T1b) / 2)
-		res = -1;
-	else if (adc > (pos_T1a + pos_T1b) / 2 && adc <= (pos_T1b + pos_T2) / 2)
-		res = -2;
-	else if (adc > (pos_T1b + pos_T2) / 2)
-		res = -3;
+	else if (adc > (configValues.Adc3c[3] + configValues.Adc3c[4]) / 2 && (adc <= (configValues.Adc3c[4] + configValues.Adc3c[5]) / 2))
+		res = 1;
+	else if (adc > (configValues.Adc3c[4] + configValues.Adc3c[5]) / 2 && (adc <= (configValues.Adc3c[5] + configValues.Adc3c[6]) / 2))
+		res = 2;
+	else if (adc > (configValues.Adc3c[5] + configValues.Adc3c[6]) / 2)
+		res = 3;
 	return res;
 }
-auto M717::Step1(double step) -> int const
+int M717::Step1(double step) // Тормозной цилиндр
 {
-	auto const zero_level = 636;
-	auto const max_level = 24865;
-
-	auto const delta = double(max_level - zero_level) / 6.0;
-
-	auto res = zero_level + int(step * delta);
-	if (res > 27999)
-		res = 27999;
-	else if (res < 0)
-		res = 0;
+	int res = ((double)configValues.Step1c[1] - (double)configValues.Step1c[0]) * step / 6.0 + (double)configValues.Step1c[0];
 	return res;
 }
-auto M717::Step2(double step) -> int const
+int M717::Step2(double step) // Напорная магистраль
 {
-	auto const zero_level = 27750;
-	auto const max_level = 3275;
-
-	auto const delta = double(max_level - zero_level) / 16.0;
-
-	auto res = zero_level + int(step * delta);
-	if (res > 27999)
-		res = 27999;
-	else if (res < 0)
-		res = 0;
+	int res = ((double)configValues.Step2c[1] - (double)configValues.Step2c[0]) * step / 16.0 + (double)configValues.Step2c[0];
 	return res;
 }
-auto M717::Step3(double step) -> int const
+int M717::Step3(double step) // Тормозная магистраль
 {
-	auto const zero_level = 24968;
-	auto const max_level = 478;
-
-	auto const delta = double(max_level - zero_level) / 16.0;
-
-	auto res = zero_level + int(step * delta);
-	if (res > 27999)
-		res = 27999;
-	else if (res < 0)
-		res = 0;
+	int res = ((double)configValues.Step3c[1] - (double)configValues.Step3c[0]) * step / 16.0 + (double)configValues.Step3c[0];
 	return res;
 }
-auto M717::Step4(double step) -> int const
+int M717::Step4(double step) // Амперметр
 {
-	int const min_level = 3337;
-	int const max_level = 11454;
-	double const max_step = 500.0;
-	double const min_step = -500.0;
-
-	auto res = int(((max_level - min_level) * step + max_step * min_level - min_step * max_level) / (max_step - min_step));
-	if (res > 27999)
-		res = 27999;
-	else if (res < 0)
-		res = 0;
+	int res = ((double)configValues.Step4c[1] - (double)configValues.Step4c[0]) * step / 1000.0 + (double)configValues.Step4c[0];
 	return res;
 }
-auto M717::Step5(double step) -> int const
+int M717::Step5(double step) // Киловольтметр
 {
-	auto const zero_level = 0;
-	auto const max_level = 7802;
-
-	auto const delta = double(max_level - zero_level) / 1.0;
-
-	auto res = zero_level + int(step * delta);
-	if (res > 27999)
-		res = 27999;
-	else if (res < 0)
-		res = 0;
+	int res = ((double)configValues.Step5c[1] - (double)configValues.Step5c[0]) * step / 1.0 + (double)configValues.Step5c[0];
 	return res;
 }
-auto M717::Step6(double step) -> int const
+int M717::Step6(double step) // АКБ
 {
-	auto const zero_level = 150;
-	auto const max_level = 8228;
-
-	auto const delta = double(max_level - zero_level) / 150.0;
-
-	auto res = zero_level + int(step * delta);
-	if (res > 27999)
-		res = 27999;
-	else if (res < 0)
-		res = 0;
+	int res = ((double)configValues.Step6c[1] - (double)configValues.Step6c[0]) * step / 150.0 + (double)configValues.Step6c[0];
 	return res;
 }
 
@@ -919,8 +973,8 @@ void M717::update()
 
 	EnterCriticalSection(&m_SignalCriticalSection);
 
-	inHardwareSignals.stopCrane = Adc1(ADC_Signals[0]);
-	inHardwareSignals.tap313 = Adc2(ADC_Signals[1]);
+	inHardwareSignals.stopCrane = 0;//Adc1(ADC_Signals[0]);
+	inHardwareSignals.KM013 = Adc2(ADC_Signals[1]);
 	inHardwareSignals.mainController = Adc3(ADC_Signals[2]);
 	//inHardwareSignals.ADC3Value = ADC_Signals[2];
 	inHardwareSignals.reverseController = Input_Signals[79] - Input_Signals[78];
@@ -1155,7 +1209,7 @@ void M717::inSignals()
 	Input["PB"] = inHardwareSignals.safetyPedal;
 	Input["ARS13"] = inHardwareSignals.ARS13V;
 	Input["EmergencyBrakeValve"] = inHardwareSignals.stopCrane;//стоп кран
-	Input["KM013"] = inHardwareSignals.tap313;
+	Input["KM013"] = inHardwareSignals.KM013;
 	Input["UAVAC"] = inHardwareSignals.UAVAButton;//уава кран
 	Input["R_UNch"] = inHardwareSignals.UNCHSwitch;
 	Input["UOS"] = inHardwareSignals.UOS;//УОС
@@ -1624,7 +1678,7 @@ M717::InHardwareSignals::InHardwareSignals()
 	, second1Program(notSignal)
 	, second2Program(notSignal)
 	, stopCrane(notSignal)
-	, tap313(notSignal)
+	, KM013(notSignal)
 	, UAVAButton(notSignal)
 	, UNCHSwitch(notSignal)
 	, UOS(notSignal)
@@ -1695,5 +1749,18 @@ M717::OutHardwareSignals::OutHardwareSignals()
 	, LVD(iNanSignal)
 	, LKT(iNanSignal)
 	, LST(iNanSignal)
+{
+}
+
+M717::ConfigValues::ConfigValues()
+	: Adc1c()
+	, Adc2c()
+	, Adc3c()
+	, Step1c()
+	, Step2c()
+	, Step3c()
+	, Step4c()
+	, Step5c()
+	, Step6c()
 {
 }

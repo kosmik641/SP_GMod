@@ -5,7 +5,9 @@
 #include <map>
 #include <string>
 #include "process.h"
+#include <locale.h>
 #include "Interface.h"
+#include <fstream>
 
 #define PushCLua( _function, _name ) LUA->PushCFunction(_function); LUA->SetField(-2, _name);
 
@@ -367,7 +369,7 @@ namespace Glob {
 				int second1Program;
 				int second2Program;
 				int stopCrane;
-				int tap313;
+				int KM013;
 				int UAVAButton;
 				int UNCHSwitch;
 				int UOS;
@@ -440,6 +442,31 @@ namespace Glob {
 				int LST;
 			};
 
+			struct ConfigValues
+			{
+				ConfigValues();
+				int Adc1c[2]; // Стопкран
+				int Adc2c[7]; // Кран машиниста
+				int Adc3c[7]; // Контроллер машиниста
+				int Step1c[2]; // ТЦ
+				int Step2c[2]; // НМ
+				int Step3c[2]; // ТМ
+				int Step4c[2]; // Амперметр
+				int Step5c[2]; // Киловольтметр
+				int Step6c[2]; // АКБ
+			};
+
+			void readAdc1Config();
+			void readAdc2Config();
+			void readAdc3Config();
+
+			void readTCConfig();
+			void readTMConfig();
+			void readNMConfig();
+			void readAmpermeterConfig();
+			void readVoltmeterConfig();
+			void readKiloVoltmeterConfig();
+
 			int startSignals(int a_port);
 			void InitConfArrays();
 			void update();
@@ -448,21 +475,22 @@ namespace Glob {
 			void inSignals();
 			void outSignals();
 
-			auto Adc1(int adc) -> int const; // Стоп-кран
-			auto Adc2(int adc) -> int const; // Кран машиниста
-			auto Adc3(int adc) -> int const; // Контроллер машиниста
+			int Adc1(int adc); // Стоп-кран
+			int Adc2(int adc); // Кран машиниста
+			int Adc3(int adc); // Контроллер машиниста
 
-			auto Step1(double step) -> int const; // Тормозной цилиндр
-			auto Step2(double step) -> int const; // Напорная магистраль
-			auto Step3(double step) -> int const; // Тормозная магистраль
-			auto Step4(double step) -> int const; // Амперметр
-			auto Step5(double step) -> int const; // Киловольтметр
-			auto Step6(double step) -> int const; // Акк. батарея
+			int Step1(double step); // Тормозной цилиндр
+			int Step2(double step); // Напорная магистраль
+			int Step3(double step); // Тормозная магистраль
+			int Step4(double step); // Амперметр
+			int Step5(double step); // Киловольтметр
+			int Step6(double step); // Акк. батарея
 
 			extern CircuitBrakersOn circuitBrakersOn;
 			extern CircuitBrakersOff circuitBrakersOff;
 			extern InHardwareSignals inHardwareSignals;
 			extern OutHardwareSignals outHardwareSignals;
+			extern ConfigValues configValues;
 		}
 		
 	}

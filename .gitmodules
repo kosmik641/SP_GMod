@@ -1,0 +1,3 @@
+[submodule "garrysmod_common"]
+	path = GM_Zarnitsa/include/garrysmod_common
+	url = ../../danielga/garrysmod_common.git

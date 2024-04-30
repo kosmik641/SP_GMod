@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "utf8_to_cp1251.h"
 #include "params.h"
 #include <windows.h>
@@ -112,18 +112,18 @@ private:
 
 	struct TextDisplaySignals
 	{
-		int on = 0;    // Включен экран
-		int ledOn = 0; // Включена подсветка.
+		int on = 0;    // Р’РєР»СЋС‡РµРЅ СЌРєСЂР°РЅ
+		int ledOn = 0; // Р’РєР»СЋС‡РµРЅР° РїРѕРґСЃРІРµС‚РєР°.
 		char text[50]{};
 	};
 
 	struct Configuration {
-		int nControllers = 0; // Количество контроллеров
+		int nControllers = 0; // РљРѕР»РёС‡РµСЃС‚РІРѕ РєРѕРЅС‚СЂРѕР»Р»РµСЂРѕРІ
 		
-		std::unique_ptr<int[]> arrPins = nullptr; // Массив конфигурации пинов
-		std::unique_ptr<int[]> arrArrows = nullptr; // Количество стрелочных приборов на контроллер
-		std::unique_ptr<SevenDecSignals[]> arr7SegDec = nullptr; // Массив конфигурации 7-ми сегментного индикатора скорости для метро (через дешифратор К514ИД2)
-		std::unique_ptr<int[]> arrTextDisplaySize = nullptr; // Массив конфигурации текстовых дисплеев.
+		std::unique_ptr<int[]> arrPins = nullptr; // РњР°СЃСЃРёРІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё РїРёРЅРѕРІ
+		std::unique_ptr<int[]> arrArrows = nullptr; // РљРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРµР»РѕС‡РЅС‹С… РїСЂРёР±РѕСЂРѕРІ РЅР° РєРѕРЅС‚СЂРѕР»Р»РµСЂ
+		std::unique_ptr<SevenDecSignals[]> arr7SegDec = nullptr; // РњР°СЃСЃРёРІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё 7-РјРё СЃРµРіРјРµРЅС‚РЅРѕРіРѕ РёРЅРґРёРєР°С‚РѕСЂР° СЃРєРѕСЂРѕСЃС‚Рё РґР»СЏ РјРµС‚СЂРѕ (С‡РµСЂРµР· РґРµС€РёС„СЂР°С‚РѕСЂ Рљ514РР”2)
+		std::unique_ptr<int[]> arrTextDisplaySize = nullptr; // РњР°СЃСЃРёРІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё С‚РµРєСЃС‚РѕРІС‹С… РґРёСЃРїР»РµРµРІ.
 
 		std::unique_ptr<int[]> arrADCPerController = nullptr;
 	} m_Config;
@@ -133,17 +133,17 @@ private:
 		int nOutputBytes = 0;
 		int nUARTBytes = 0;
 
-		std::unique_ptr<byte[]> arrInputBytes = nullptr; // Массив для приема данных
-		std::unique_ptr<byte[]> arrOutputBytes = nullptr; // Массив для отправки данных
-		std::unique_ptr<byte[]> arrUARTBytes = nullptr; // Массив для отправки UART данных
+		std::unique_ptr<byte[]> arrInputBytes = nullptr; // РњР°СЃСЃРёРІ РґР»СЏ РїСЂРёРµРјР° РґР°РЅРЅС‹С…
+		std::unique_ptr<byte[]> arrOutputBytes = nullptr; // РњР°СЃСЃРёРІ РґР»СЏ РѕС‚РїСЂР°РІРєРё РґР°РЅРЅС‹С…
+		std::unique_ptr<byte[]> arrUARTBytes = nullptr; // РњР°СЃСЃРёРІ РґР»СЏ РѕС‚РїСЂР°РІРєРё UART РґР°РЅРЅС‹С…
 	} m_Data;
 
 	struct Signals {
-		int nPins = 0; // Размер массива конфигурации пинов
-		int nADC = 0; // Количество АЦП
-		int nArrows = 0; // Количество стрелочных сигналов
-		int n7SegDec = 0; // Размер массива сигналов 7SegDec
-		int nTextDisplays = 0; // Количество текстовых дисплеев
+		int nPins = 0; // Р Р°Р·РјРµСЂ РјР°СЃСЃРёРІР° РєРѕРЅС„РёРіСѓСЂР°С†РёРё РїРёРЅРѕРІ
+		int nADC = 0; // РљРѕР»РёС‡РµСЃС‚РІРѕ РђР¦Рџ
+		int nArrows = 0; // РљРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРµР»РѕС‡РЅС‹С… СЃРёРіРЅР°Р»РѕРІ
+		int n7SegDec = 0; // Р Р°Р·РјРµСЂ РјР°СЃСЃРёРІР° СЃРёРіРЅР°Р»РѕРІ 7SegDec
+		int nTextDisplays = 0; // РљРѕР»РёС‡РµСЃС‚РІРѕ С‚РµРєСЃС‚РѕРІС‹С… РґРёСЃРїР»РµРµРІ
 
 		std::unique_ptr<int[]> arrInput = nullptr;
 		std::unique_ptr<int[]> arrOutput = nullptr;

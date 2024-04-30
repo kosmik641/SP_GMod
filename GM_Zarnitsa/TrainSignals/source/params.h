@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define CALIBRATIONS_FILE ".\\uart_config\\calibrations.ini"
 #define TRAIN_CLASSNAME "gmod_subway_81-717_mvm"
 #define MSG_COLOR Color(200, 255, 100, 255)

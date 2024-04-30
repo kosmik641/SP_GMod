@@ -1,4 +1,4 @@
-#include "UARTFrontView717.h"
+п»ї#include "UARTFrontView717.h"
 
 UARTFrontView717::UARTFrontView717()
 {
@@ -228,24 +228,24 @@ void UARTFrontView717::setupArrays()
 #ifdef SHOW_CONSOLE
 	printf("%s\n", __FUNCSIG__);
 #endif
-	// Количество контроллеров
+	// РљРѕР»РёС‡РµСЃС‚РІРѕ РєРѕРЅС‚СЂРѕР»Р»РµСЂРѕРІ
 	int nControllers = 14;
 
-	// Количество стрелочных приборов на контроллер
+	// РљРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРµР»РѕС‡РЅС‹С… РїСЂРёР±РѕСЂРѕРІ РЅР° РєРѕРЅС‚СЂРѕР»Р»РµСЂ
 	m_Config.arrArrows.reset(new int[nControllers]());
 	m_Config.arrArrows[2] = 3;
 	m_Config.arrArrows[3] = 3;
 
-	// Массив конфигурации 7-ми сегментного индикатора скорости для метро (через дешифратор К514ИД2)
+	// РњР°СЃСЃРёРІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё 7-РјРё СЃРµРіРјРµРЅС‚РЅРѕРіРѕ РёРЅРґРёРєР°С‚РѕСЂР° СЃРєРѕСЂРѕСЃС‚Рё РґР»СЏ РјРµС‚СЂРѕ (С‡РµСЂРµР· РґРµС€РёС„СЂР°С‚РѕСЂ Рљ514РР”2)
 	m_Config.arr7SegDec.reset(new SevenDecSignals[nControllers]());
 	m_Config.arr7SegDec[8].port[0] = 1;
 
-	// Массив конфигурации текстовых дисплеев. Число, отличное от нуля, обозначает кол-во символов в одной строке дисплея.
+	// РњР°СЃСЃРёРІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё С‚РµРєСЃС‚РѕРІС‹С… РґРёСЃРїР»РµРµРІ. Р§РёСЃР»Рѕ, РѕС‚Р»РёС‡РЅРѕРµ РѕС‚ РЅСѓР»СЏ, РѕР±РѕР·РЅР°С‡Р°РµС‚ РєРѕР»-РІРѕ СЃРёРјРІРѕР»РѕРІ РІ РѕРґРЅРѕР№ СЃС‚СЂРѕРєРµ РґРёСЃРїР»РµСЏ.
 	m_Config.arrTextDisplaySize.reset(new int[nControllers]());
 	m_Config.arrTextDisplaySize[12] = 20;
 	m_Config.arrTextDisplaySize[13] = 24;
 
-	// Главный конфигурационный массив
+	// Р“Р»Р°РІРЅС‹Р№ РєРѕРЅС„РёРіСѓСЂР°С†РёРѕРЅРЅС‹Р№ РјР°СЃСЃРёРІ
 	int nPins = 24 * nControllers;
 	m_Config.arrPins.reset(new int[nPins]());
 
@@ -257,95 +257,95 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[4] = NotUsed; // 
 	m_Config.arrPins[5] = NotUsed; // 
 	m_Config.arrPins[6] = NotUsed; // 
-	m_Config.arrPins[7] = InputADC; // Стоп-кран
+	m_Config.arrPins[7] = InputADC; // РЎС‚РѕРї-РєСЂР°РЅ
 
 	// 1.2
-	m_Config.arrPins[8] = Input; // УНЧ     
-	m_Config.arrPins[9] = Input; // Контроль ЭС
-	m_Config.arrPins[10] = Input; // Контр громког
-	m_Config.arrPins[11] = Input; // Радио
-	m_Config.arrPins[12] = Input; // 1-2 программы(прав)
-	m_Config.arrPins[13] = Input; // 1-2 программы(лев)
-	m_Config.arrPins[14] = Input; // Закрытие дверей
-	m_Config.arrPins[15] = Input; // ВПР
+	m_Config.arrPins[8] = Input; // РЈРќР§     
+	m_Config.arrPins[9] = Input; // РљРѕРЅС‚СЂРѕР»СЊ Р­РЎ
+	m_Config.arrPins[10] = Input; // РљРѕРЅС‚СЂ РіСЂРѕРјРєРѕРі
+	m_Config.arrPins[11] = Input; // Р Р°РґРёРѕ
+	m_Config.arrPins[12] = Input; // 1-2 РїСЂРѕРіСЂР°РјРјС‹(РїСЂР°РІ)
+	m_Config.arrPins[13] = Input; // 1-2 РїСЂРѕРіСЂР°РјРјС‹(Р»РµРІ)
+	m_Config.arrPins[14] = Input; // Р—Р°РєСЂС‹С‚РёРµ РґРІРµСЂРµР№
+	m_Config.arrPins[15] = Input; // Р’РџР 
 
 	// 1.3
-	m_Config.arrPins[16] = Input; // Вкл. мотор компрессора
-	m_Config.arrPins[17] = Input; // БПСН
-	m_Config.arrPins[18] = Input; // Аварийное освещение
-	m_Config.arrPins[19] = Input; // Компрессор резервный
-	m_Config.arrPins[20] = Input; // АРС 13V
-	m_Config.arrPins[21] = Input; // АСНП: Вверх
-	m_Config.arrPins[22] = Input; // АСНП: Вниз
-	m_Config.arrPins[23] = Input; // АСНП: Меню
-	m_Config.arrPins[24] = InputADC; // КМ-013
+	m_Config.arrPins[16] = Input; // Р’РєР». РјРѕС‚РѕСЂ РєРѕРјРїСЂРµСЃСЃРѕСЂР°
+	m_Config.arrPins[17] = Input; // Р‘РџРЎРќ
+	m_Config.arrPins[18] = Input; // РђРІР°СЂРёР№РЅРѕРµ РѕСЃРІРµС‰РµРЅРёРµ
+	m_Config.arrPins[19] = Input; // РљРѕРјРїСЂРµСЃСЃРѕСЂ СЂРµР·РµСЂРІРЅС‹Р№
+	m_Config.arrPins[20] = Input; // РђР РЎ 13V
+	m_Config.arrPins[21] = Input; // РђРЎРќРџ: Р’РІРµСЂС…
+	m_Config.arrPins[22] = Input; // РђРЎРќРџ: Р’РЅРёР·
+	m_Config.arrPins[23] = Input; // РђРЎРќРџ: РњРµРЅСЋ
+	m_Config.arrPins[24] = InputADC; // РљРњ-013
 
 	// 2.1
-	m_Config.arrPins[25] = Input; // КВ-70: 10-8
-	m_Config.arrPins[26] = Input; // КВ-70: Реверс вкл
-	m_Config.arrPins[27] = Input; // КВ-70: Выбеш
-	m_Config.arrPins[28] = Input; // КВ-70: Реверс назад
-	m_Config.arrPins[29] = Input; // КВ-70: У2-2
-	m_Config.arrPins[30] = Input; // КВ-70: У2-20Б
-	m_Config.arrPins[31] = Input; // КВ-70: У2-3
+	m_Config.arrPins[25] = Input; // РљР’-70: 10-8
+	m_Config.arrPins[26] = Input; // РљР’-70: Р РµРІРµСЂСЃ РІРєР»
+	m_Config.arrPins[27] = Input; // РљР’-70: Р’С‹Р±РµС€
+	m_Config.arrPins[28] = Input; // РљР’-70: Р РµРІРµСЂСЃ РЅР°Р·Р°Рґ
+	m_Config.arrPins[29] = Input; // РљР’-70: РЈ2-2
+	m_Config.arrPins[30] = Input; // РљР’-70: РЈ2-20Р‘
+	m_Config.arrPins[31] = Input; // РљР’-70: РЈ2-3
 
 	// 2.2
-	m_Config.arrPins[32] = Input; // АРС
-	m_Config.arrPins[33] = Input; // АЛС
-	m_Config.arrPins[34] = Input; // АРС-Р
-	m_Config.arrPins[35] = Input; // Дешифратор
-	m_Config.arrPins[36] = Input; // Осв. салона
-	m_Config.arrPins[37] = Input; // Осв. кабины
-	m_Config.arrPins[38] = Input; // Осв. пульта
-	m_Config.arrPins[39] = Input; // ВП
+	m_Config.arrPins[32] = Input; // РђР РЎ
+	m_Config.arrPins[33] = Input; // РђР›РЎ
+	m_Config.arrPins[34] = Input; // РђР РЎ-Р 
+	m_Config.arrPins[35] = Input; // Р”РµС€РёС„СЂР°С‚РѕСЂ
+	m_Config.arrPins[36] = Input; // РћСЃРІ. СЃР°Р»РѕРЅР°
+	m_Config.arrPins[37] = Input; // РћСЃРІ. РєР°Р±РёРЅС‹
+	m_Config.arrPins[38] = Input; // РћСЃРІ. РїСѓР»СЊС‚Р°
+	m_Config.arrPins[39] = Input; // Р’Рџ
 
 	// 2.3
-	m_Config.arrPins[40] = Input; // Рез. закрытие дверей
-	m_Config.arrPins[41] = Input; // Вкл. БВ
-	m_Config.arrPins[42] = Input; // Двери левые (правая)
-	m_Config.arrPins[43] = Input; // Двери левые (левая)
-	m_Config.arrPins[44] = Input; // Выбор дверей (левые-0, правые-1)
-	m_Config.arrPins[45] = Input; // Бдительность (левая)
-	m_Config.arrPins[46] = Input; // Бдительность (правая)
-	m_Config.arrPins[47] = Input; // АВУ
+	m_Config.arrPins[40] = Input; // Р РµР·. Р·Р°РєСЂС‹С‚РёРµ РґРІРµСЂРµР№
+	m_Config.arrPins[41] = Input; // Р’РєР». Р‘Р’
+	m_Config.arrPins[42] = Input; // Р”РІРµСЂРё Р»РµРІС‹Рµ (РїСЂР°РІР°СЏ)
+	m_Config.arrPins[43] = Input; // Р”РІРµСЂРё Р»РµРІС‹Рµ (Р»РµРІР°СЏ)
+	m_Config.arrPins[44] = Input; // Р’С‹Р±РѕСЂ РґРІРµСЂРµР№ (Р»РµРІС‹Рµ-0, РїСЂР°РІС‹Рµ-1)
+	m_Config.arrPins[45] = Input; // Р‘РґРёС‚РµР»СЊРЅРѕСЃС‚СЊ (Р»РµРІР°СЏ)
+	m_Config.arrPins[46] = Input; // Р‘РґРёС‚РµР»СЊРЅРѕСЃС‚СЊ (РїСЂР°РІР°СЏ)
+	m_Config.arrPins[47] = Input; // РђР’РЈ
 
 	// 3.1
-	m_Config.arrPins[48] = Input; // Двери торцевые (1 гр.)
-	m_Config.arrPins[49] = Input; // Вентиляция кабины
-	m_Config.arrPins[50] = Input; // Вкл. авар. сигн.
-	m_Config.arrPins[51] = Input; // Защита преобразователя
-	m_Config.arrPins[52] = Input; // Сигнализация
-	m_Config.arrPins[53] = Input; // Звонок
-	m_Config.arrPins[54] = Input; // Откл БВ
-	m_Config.arrPins[55] = Input; // Вентиль №1
+	m_Config.arrPins[48] = Input; // Р”РІРµСЂРё С‚РѕСЂС†РµРІС‹Рµ (1 РіСЂ.)
+	m_Config.arrPins[49] = Input; // Р’РµРЅС‚РёР»СЏС†РёСЏ РєР°Р±РёРЅС‹
+	m_Config.arrPins[50] = Input; // Р’РєР». Р°РІР°СЂ. СЃРёРіРЅ.
+	m_Config.arrPins[51] = Input; // Р—Р°С‰РёС‚Р° РїСЂРµРѕР±СЂР°Р·РѕРІР°С‚РµР»СЏ
+	m_Config.arrPins[52] = Input; // РЎРёРіРЅР°Р»РёР·Р°С†РёСЏ
+	m_Config.arrPins[53] = Input; // Р—РІРѕРЅРѕРє
+	m_Config.arrPins[54] = Input; // РћС‚РєР» Р‘Р’
+	m_Config.arrPins[55] = Input; // Р’РµРЅС‚РёР»СЊ в„–1
 
 	// 3.2
-	m_Config.arrPins[56] = Input; // Пуск резервный
-	m_Config.arrPins[57] = Input; // Аварийный ход
-	m_Config.arrPins[58] = Input; // Фары
-	m_Config.arrPins[59] = Input; // ВУС
-	m_Config.arrPins[60] = Input; // Авариные двери (тумблер)
-	m_Config.arrPins[61] = Input; // Аварийный ход (тумблер)
-	m_Config.arrPins[62] = Input; // ВКСТ
-	m_Config.arrPins[63] = Input; // Двери прав
+	m_Config.arrPins[56] = Input; // РџСѓСЃРє СЂРµР·РµСЂРІРЅС‹Р№
+	m_Config.arrPins[57] = Input; // РђРІР°СЂРёР№РЅС‹Р№ С…РѕРґ
+	m_Config.arrPins[58] = Input; // Р¤Р°СЂС‹
+	m_Config.arrPins[59] = Input; // Р’РЈРЎ
+	m_Config.arrPins[60] = Input; // РђРІР°СЂРёРЅС‹Рµ РґРІРµСЂРё (С‚СѓРјР±Р»РµСЂ)
+	m_Config.arrPins[61] = Input; // РђРІР°СЂРёР№РЅС‹Р№ С…РѕРґ (С‚СѓРјР±Р»РµСЂ)
+	m_Config.arrPins[62] = Input; // Р’РљРЎРў
+	m_Config.arrPins[63] = Input; // Р”РІРµСЂРё РїСЂР°РІ
 
 	// 3.3
-	m_Config.arrPins[64] = Input; // КРУ1
-	m_Config.arrPins[65] = Input; // КРУ2
+	m_Config.arrPins[64] = Input; // РљР РЈ1
+	m_Config.arrPins[65] = Input; // РљР РЈ2
 	m_Config.arrPins[66] = NotUsed; // 
-	m_Config.arrPins[67] = Input; // АСОТП1
-	m_Config.arrPins[68] = Input; // АСОТП2
-	m_Config.arrPins[69] = Input; // АСОТП3
-	m_Config.arrPins[70] = Input; // АСОТП4
+	m_Config.arrPins[67] = Input; // РђРЎРћРўРџ1
+	m_Config.arrPins[68] = Input; // РђРЎРћРўРџ2
+	m_Config.arrPins[69] = Input; // РђРЎРћРўРџ3
+	m_Config.arrPins[70] = Input; // РђРЎРћРўРџ4
 	m_Config.arrPins[71] = NotUsed; // 
 
 	// 4.1
-	m_Config.arrPins[72] = Input; // Помощник: Закрытие дверей
-	m_Config.arrPins[73] = Input; // Помощник: Левые двери
-	m_Config.arrPins[74] = Input; // Помощник: Программа 1
-	m_Config.arrPins[75] = Input; // Помощник: Программа 2
-	m_Config.arrPins[76] = Input; // Педаль бдительности
-	m_Config.arrPins[77] = Input; // Пневмосигнал
+	m_Config.arrPins[72] = Input; // РџРѕРјРѕС‰РЅРёРє: Р—Р°РєСЂС‹С‚РёРµ РґРІРµСЂРµР№
+	m_Config.arrPins[73] = Input; // РџРѕРјРѕС‰РЅРёРє: Р›РµРІС‹Рµ РґРІРµСЂРё
+	m_Config.arrPins[74] = Input; // РџРѕРјРѕС‰РЅРёРє: РџСЂРѕРіСЂР°РјРјР° 1
+	m_Config.arrPins[75] = Input; // РџРѕРјРѕС‰РЅРёРє: РџСЂРѕРіСЂР°РјРјР° 2
+	m_Config.arrPins[76] = Input; // РџРµРґР°Р»СЊ Р±РґРёС‚РµР»СЊРЅРѕСЃС‚Рё
+	m_Config.arrPins[77] = Input; // РџРЅРµРІРјРѕСЃРёРіРЅР°Р»
 	m_Config.arrPins[78] = NotUsed; // 
 	m_Config.arrPins[79] = NotUsed; // 
 
@@ -354,15 +354,15 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[81] = NotUsed; // 
 	m_Config.arrPins[82] = NotUsed; // 
 	m_Config.arrPins[83] = NotUsed; // 
-	m_Config.arrPins[84] = Input; // Управление (предохранитель)
-	m_Config.arrPins[85] = Input; // Батарея (предохранитель)
-	m_Config.arrPins[86] = Input; // Без подписи (предохранитель)
-	m_Config.arrPins[87] = Input; // Преобразователь (предохранитель)
+	m_Config.arrPins[84] = Input; // РЈРїСЂР°РІР»РµРЅРёРµ (РїСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ)
+	m_Config.arrPins[85] = Input; // Р‘Р°С‚Р°СЂРµСЏ (РїСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ)
+	m_Config.arrPins[86] = Input; // Р‘РµР· РїРѕРґРїРёСЃРё (РїСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ)
+	m_Config.arrPins[87] = Input; // РџСЂРµРѕР±СЂР°Р·РѕРІР°С‚РµР»СЊ (РїСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ)
 
 	// 4.3
-	m_Config.arrPins[88] = Input; // Освещение1 (предохранитель)
-	m_Config.arrPins[89] = Input; // Освещение2 (предохранитель)
-	m_Config.arrPins[90] = Input; // УАВА
+	m_Config.arrPins[88] = Input; // РћСЃРІРµС‰РµРЅРёРµ1 (РїСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ)
+	m_Config.arrPins[89] = Input; // РћСЃРІРµС‰РµРЅРёРµ2 (РїСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ)
+	m_Config.arrPins[90] = Input; // РЈРђР’Рђ
 	m_Config.arrPins[91] = NotUsed; // 
 	m_Config.arrPins[92] = NotUsed; // 
 	m_Config.arrPins[93] = NotUsed; // 
@@ -370,28 +370,28 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[95] = NotUsed; // 
 
 	// 5.1
-	m_Config.arrPins[96] = Input; // РЦ1
-	m_Config.arrPins[97] = Input; // Батареи
-	m_Config.arrPins[98] = Input; // УОС
-	m_Config.arrPins[99] = Input; // Втр прижат
-	m_Config.arrPins[100] = Input; // Весь состав
-	m_Config.arrPins[101] = Input; // 1 половина
-	m_Config.arrPins[102] = Input; // 2 половина
+	m_Config.arrPins[96] = Input; // Р Р¦1
+	m_Config.arrPins[97] = Input; // Р‘Р°С‚Р°СЂРµРё
+	m_Config.arrPins[98] = Input; // РЈРћРЎ
+	m_Config.arrPins[99] = Input; // Р’С‚СЂ РїСЂРёР¶Р°С‚
+	m_Config.arrPins[100] = Input; // Р’РµСЃСЊ СЃРѕСЃС‚Р°РІ
+	m_Config.arrPins[101] = Input; // 1 РїРѕР»РѕРІРёРЅР°
+	m_Config.arrPins[102] = Input; // 2 РїРѕР»РѕРІРёРЅР°
 	m_Config.arrPins[103] = NotUsed; // 
 
 	// 5.2
-	m_Config.arrPins[104] = Input; // Разобщ кран кран машиниста
-	m_Config.arrPins[105] = Input; // Стоян. тормоз
-	m_Config.arrPins[106] = Input; // ЭПВ-АРС
-	m_Config.arrPins[107] = Input; // Разобщ кран манометров
-	m_Config.arrPins[108] = Input; // Разобщ кран пневмосигнала
+	m_Config.arrPins[104] = Input; // Р Р°Р·РѕР±С‰ РєСЂР°РЅ РєСЂР°РЅ РјР°С€РёРЅРёСЃС‚Р°
+	m_Config.arrPins[105] = Input; // РЎС‚РѕСЏРЅ. С‚РѕСЂРјРѕР·
+	m_Config.arrPins[106] = Input; // Р­РџР’-РђР РЎ
+	m_Config.arrPins[107] = Input; // Р Р°Р·РѕР±С‰ РєСЂР°РЅ РјР°РЅРѕРјРµС‚СЂРѕРІ
+	m_Config.arrPins[108] = Input; // Р Р°Р·РѕР±С‰ РєСЂР°РЅ РїРЅРµРІРјРѕСЃРёРіРЅР°Р»Р°
 	m_Config.arrPins[109] = NotUsed; // 
 	m_Config.arrPins[110] = NotUsed; // 
 	m_Config.arrPins[111] = NotUsed; // 
 
 	// 5.3
 	m_Config.arrPins[112] = Input; // A54-in
-	m_Config.arrPins[113] = Input; // ВУ-in
+	m_Config.arrPins[113] = Input; // Р’РЈ-in
 	m_Config.arrPins[114] = Input; // A10-in
 	m_Config.arrPins[115] = Input; // A53-in
 	m_Config.arrPins[116] = Input; // A49-in
@@ -436,7 +436,7 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[147] = Input; // A31-in
 	m_Config.arrPins[148] = Input; // A77-in
 	m_Config.arrPins[149] = Input; // A78-in
-	m_Config.arrPins[150] = Input; // ВБД
+	m_Config.arrPins[150] = Input; // Р’Р‘Р”
 	m_Config.arrPins[151] = Input; // A75-in
 	
 	// 7.2
@@ -483,50 +483,50 @@ void UARTFrontView717::setupArrays()
 	// 8.3
 	m_Config.arrPins[184] = Input; // AB6-in
 	m_Config.arrPins[185] = Input; // A83-in
-	m_Config.arrPins[186] = Input; // A33-in (АИС)
+	m_Config.arrPins[186] = Input; // A33-in (РђРРЎ)
 	m_Config.arrPins[187] = Input; // AB3-in
-	m_Config.arrPins[188] = NotUsed; // TODO: УППС
+	m_Config.arrPins[188] = NotUsed; // TODO: РЈРџРџРЎ
 	m_Config.arrPins[189] = NotUsed; //
 	m_Config.arrPins[190] = NotUsed; // 
 	m_Config.arrPins[191] = NotUsed; // 
 	
 	// 9.1
-	m_Config.arrPins[192] = Output; // Индикатор скорости
-	m_Config.arrPins[193] = Output; // Индикатор скорости
-	m_Config.arrPins[194] = Output; // Индикатор скорости
-	m_Config.arrPins[195] = Output; // Индикатор скорости
-	m_Config.arrPins[196] = Output; // Индикатор скорости
-	m_Config.arrPins[197] = Output; // Индикатор скорости
-	m_Config.arrPins[198] = Output; // Индикатор скорости
-	m_Config.arrPins[199] = Output; // Индикатор скорости
+	m_Config.arrPins[192] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[193] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[194] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[195] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[196] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[197] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[198] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
+	m_Config.arrPins[199] = Output; // РРЅРґРёРєР°С‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
 	
 	// 9.2
-	m_Config.arrPins[200] = Output; // ОЧ
+	m_Config.arrPins[200] = Output; // РћР§
 	m_Config.arrPins[201] = Output; // 0
 	m_Config.arrPins[202] = Output; // 40
 	m_Config.arrPins[203] = Output; // 60
 	m_Config.arrPins[204] = Output; // 70
 	m_Config.arrPins[205] = Output; // 80
-	m_Config.arrPins[206] = Output; // ЛСД
+	m_Config.arrPins[206] = Output; // Р›РЎР”
 	m_Config.arrPins[207] = NotUsed; // 
 	
 	// 9.3
-	m_Config.arrPins[208] = Output; // ЛХ"РК"
-	m_Config.arrPins[209] = Output; // РП
-	m_Config.arrPins[210] = Output; // ЛСН
-	m_Config.arrPins[211] = Output; // ЛЭКК
-	m_Config.arrPins[212] = Output; // ЛКВЦ
-	m_Config.arrPins[213] = Output; // ЛН
-	m_Config.arrPins[214] = Output; // РС
-	m_Config.arrPins[215] = Output; // ЛКВД
+	m_Config.arrPins[208] = Output; // Р›РҐ"Р Рљ"
+	m_Config.arrPins[209] = Output; // Р Рџ
+	m_Config.arrPins[210] = Output; // Р›РЎРќ
+	m_Config.arrPins[211] = Output; // Р›Р­РљРљ
+	m_Config.arrPins[212] = Output; // Р›РљР’Р¦
+	m_Config.arrPins[213] = Output; // Р›Рќ
+	m_Config.arrPins[214] = Output; // Р РЎ
+	m_Config.arrPins[215] = Output; // Р›РљР’Р”
 	
 	// 10.1
 	m_Config.arrPins[216] = NotUsed; // 
 	m_Config.arrPins[217] = NotUsed; // 
 	m_Config.arrPins[218] = NotUsed; // 
-	m_Config.arrPins[219] = Output; // ЛВД
-	m_Config.arrPins[220] = Output; // ЛКТ
-	m_Config.arrPins[221] = Output; // ЛСТ
+	m_Config.arrPins[219] = Output; // Р›Р’Р”
+	m_Config.arrPins[220] = Output; // Р›РљРў
+	m_Config.arrPins[221] = Output; // Р›РЎРў
 	m_Config.arrPins[222] = NotUsed; // 
 	m_Config.arrPins[223] = NotUsed; // 
 	
@@ -534,24 +534,24 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[224] = NotUsed; // 
 	m_Config.arrPins[225] = NotUsed; // 
 	m_Config.arrPins[226] = NotUsed; // 
-	m_Config.arrPins[227] = Output; // Двери левые (левая) светодиод
-	m_Config.arrPins[228] = Output; // Двери левые (правая) светодиод
-	m_Config.arrPins[229] = Output; // РП светодиод
-	m_Config.arrPins[230] = Output; // Защита преобраз.
-	m_Config.arrPins[231] = Output; // Лампа контроля невключения вентиляции
+	m_Config.arrPins[227] = Output; // Р”РІРµСЂРё Р»РµРІС‹Рµ (Р»РµРІР°СЏ) СЃРІРµС‚РѕРґРёРѕРґ
+	m_Config.arrPins[228] = Output; // Р”РІРµСЂРё Р»РµРІС‹Рµ (РїСЂР°РІР°СЏ) СЃРІРµС‚РѕРґРёРѕРґ
+	m_Config.arrPins[229] = Output; // Р Рџ СЃРІРµС‚РѕРґРёРѕРґ
+	m_Config.arrPins[230] = Output; // Р—Р°С‰РёС‚Р° РїСЂРµРѕР±СЂР°Р·.
+	m_Config.arrPins[231] = Output; // Р›Р°РјРїР° РєРѕРЅС‚СЂРѕР»СЏ РЅРµРІРєР»СЋС‡РµРЅРёСЏ РІРµРЅС‚РёР»СЏС†РёРё
 	
 	// 10.3
-	m_Config.arrPins[232] = Output; // ЛСП
-	m_Config.arrPins[233] = Output; // АВУ
-	m_Config.arrPins[234] = Output; // ЛКВП
-	m_Config.arrPins[235] = Output; // Пневмотормоз
-	m_Config.arrPins[236] = Output; // ИСТ
-	m_Config.arrPins[237] = Output; // Двери правые
+	m_Config.arrPins[232] = Output; // Р›РЎРџ
+	m_Config.arrPins[233] = Output; // РђР’РЈ
+	m_Config.arrPins[234] = Output; // Р›РљР’Рџ
+	m_Config.arrPins[235] = Output; // РџРЅРµРІРјРѕС‚РѕСЂРјРѕР·
+	m_Config.arrPins[236] = Output; // РРЎРў
+	m_Config.arrPins[237] = Output; // Р”РІРµСЂРё РїСЂР°РІС‹Рµ
 	m_Config.arrPins[238] = NotUsed; // 
 	m_Config.arrPins[239] = NotUsed; // 
 	
 	// 11.1
-	m_Config.arrPins[240] = Output; // ВУ-o
+	m_Config.arrPins[240] = Output; // Р’РЈ-o
 	m_Config.arrPins[241] = Output; // A54-o
 	m_Config.arrPins[242] = Output; // A53-o
 	m_Config.arrPins[243] = Output; // A10-o
@@ -603,12 +603,12 @@ void UARTFrontView717::setupArrays()
 	// 12.3
 	m_Config.arrPins[280] = NotUsed; // 
 	m_Config.arrPins[281] = NotUsed; // 
-	m_Config.arrPins[282] = Output; // АСОТП: Кнопка 4
-	m_Config.arrPins[283] = Output; // АСОТП: Кнопка 3
-	m_Config.arrPins[284] = Output; // АСОТП: Кнопка 2
-	m_Config.arrPins[285] = Output; // АСОТП: Кнопка 1
-	m_Config.arrPins[286] = Output; // АСОТП: НЕИСПР.
-	m_Config.arrPins[287] = Output; // АСОТП: ПОЖАР !
+	m_Config.arrPins[282] = Output; // РђРЎРћРўРџ: РљРЅРѕРїРєР° 4
+	m_Config.arrPins[283] = Output; // РђРЎРћРўРџ: РљРЅРѕРїРєР° 3
+	m_Config.arrPins[284] = Output; // РђРЎРћРўРџ: РљРЅРѕРїРєР° 2
+	m_Config.arrPins[285] = Output; // РђРЎРћРўРџ: РљРЅРѕРїРєР° 1
+	m_Config.arrPins[286] = Output; // РђРЎРћРўРџ: РќР•РРЎРџР .
+	m_Config.arrPins[287] = Output; // РђРЎРћРўРџ: РџРћР–РђР  !
 	
 	// 13.1
 	m_Config.arrPins[288] = Output; // A8-o
@@ -661,17 +661,17 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[327] = NotUsed; // 
 	
 	// 14.3
-	m_Config.arrPins[328] = Output; // Клапан 1
-	m_Config.arrPins[329] = Output; // Клапан 2
+	m_Config.arrPins[328] = Output; // РљР»Р°РїР°РЅ 1
+	m_Config.arrPins[329] = Output; // РљР»Р°РїР°РЅ 2
 	m_Config.arrPins[330] = NotUsed; // 
-	m_Config.arrPins[331] = Output; // Клапан 3
+	m_Config.arrPins[331] = Output; // РљР»Р°РїР°РЅ 3
 	m_Config.arrPins[332] = NotUsed; // 
 	m_Config.arrPins[333] = NotUsed; // 
 	m_Config.arrPins[334] = NotUsed; // 
 	m_Config.arrPins[335] = NotUsed; // 
 	
-	// Считаем размеры массивов
-	// Количество ADC
+	// РЎС‡РёС‚Р°РµРј СЂР°Р·РјРµСЂС‹ РјР°СЃСЃРёРІРѕРІ
+	// РљРѕР»РёС‡РµСЃС‚РІРѕ ADC
 	m_Config.arrADCPerController.reset(new int[nControllers]());
 	int nADC = 0;
 	for (int i = 0; i < nPins; i++)
@@ -684,14 +684,14 @@ void UARTFrontView717::setupArrays()
 		}
 	}
 
-	// Количество стрелочных приборов
+	// РљРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРµР»РѕС‡РЅС‹С… РїСЂРёР±РѕСЂРѕРІ
 	int nArrows = 0;
 	for (int c = 0; c < nControllers; c++)
 	{
 		nArrows += m_Config.arrArrows[c];
 	}
 
-	// Размер массива сигналов 7SegDec
+	// Р Р°Р·РјРµСЂ РјР°СЃСЃРёРІР° СЃРёРіРЅР°Р»РѕРІ 7SegDec
 	int n7SegDec = 0;
 	for (int c = 0; c < nControllers; c++)
 	{
@@ -701,7 +701,7 @@ void UARTFrontView717::setupArrays()
 		}
 	}
 
-	// Количество подключенных текстовых дисплеев
+	// РљРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРґРєР»СЋС‡РµРЅРЅС‹С… С‚РµРєСЃС‚РѕРІС‹С… РґРёСЃРїР»РµРµРІ
 	int nTextDisplays = 0;
 	for (int c = 0; c < nControllers; c++)
 	{
@@ -716,7 +716,7 @@ void UARTFrontView717::setupArrays()
 	m_Signals.n7SegDec = n7SegDec;
 	m_Signals.nTextDisplays = nTextDisplays;
 
-	// Инициализируем массивы для сигналов
+	// РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РјР°СЃСЃРёРІС‹ РґР»СЏ СЃРёРіРЅР°Р»РѕРІ
 	m_Signals.arrInput.reset(new int[nPins]());
 	m_Signals.arrOutput.reset(new int[nPins]());
 	m_Signals.arrADC.reset(new int[nADC]());
@@ -725,7 +725,7 @@ void UARTFrontView717::setupArrays()
 	m_Signals.arrTextDisplay.reset(new TextDisplaySignals[nTextDisplays]());
 
 
-	// Задание типа Integer для переменных
+	// Р—Р°РґР°РЅРёРµ С‚РёРїР° Integer РґР»СЏ РїРµСЂРµРјРµРЅРЅС‹С…
 	m_NW2VarTableInput.VarTable["ControllerPosition"].type = 3;
 	m_NW2VarTableInput.VarTable["ReverserPosition"].type = 3;
 	m_NW2VarTableInput.VarTable["KRUPosition"].type = 3;
@@ -798,7 +798,7 @@ int UARTFrontView717::setupDevice()
 	{
 		Sleep(100);
 
-		// Отправляем конфигурацию на контроллеры
+		// РћС‚РїСЂР°РІР»СЏРµРј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РЅР° РєРѕРЅС‚СЂРѕР»Р»РµСЂС‹
 		WriteFile(m_hPort, arrConfigBytes.get(), nConfigBytes, nullptr, nullptr);
 
 		COMSTAT comstat;
@@ -961,7 +961,7 @@ void UARTFrontView717::writeShutdownDevice()
 	printf("%s\n", __FUNCSIG__);
 #endif
 	PRINT_MSG("Send shutdown data...\n");
-	// Отправка UART
+	// РћС‚РїСЂР°РІРєР° UART
 	if (m_Data.nUARTBytes > 0)
 	{
 		m_Data.arrUARTBytes[0] = (byte)m_Data.nUARTBytes;
@@ -986,7 +986,7 @@ void UARTFrontView717::writeShutdownDevice()
 				m_Data.arrUARTBytes[iUARTByte++] = 0x54; // 'T' aka Text
 				m_Data.arrUARTBytes[iUARTByte++] = 0x42; // 'B' aka Begin
 
-				m_Data.arrUARTBytes[iUARTByte++] = 0x00; // Экран выключен
+				m_Data.arrUARTBytes[iUARTByte++] = 0x00; // Р­РєСЂР°РЅ РІС‹РєР»СЋС‡РµРЅ
 				m_Data.arrUARTBytes[iUARTByte++] = (byte)(m_Config.arrTextDisplaySize[c] * 2);
 
 				for (int iTextByte = 0; iTextByte < (m_Config.arrTextDisplaySize[c] * 2); iTextByte++)
@@ -1007,7 +1007,7 @@ void UARTFrontView717::writeShutdownDevice()
 		}
 	}
 
-	// Отправка сигналов
+	// РћС‚РїСЂР°РІРєР° СЃРёРіРЅР°Р»РѕРІ
 	DWORD disableBytesSize = m_Config.nControllers * 7 + 2;
 	std::unique_ptr<byte[]> disableBytes = std::make_unique<byte[]>(disableBytesSize);
 	disableBytes[0] = (byte)(disableBytesSize - 2);
@@ -1036,11 +1036,11 @@ void UARTFrontView717::deviceThreadFunc()
 
 	while (!m_ThreadStop)
 	{
-		// Входные сигналы
+		// Р’С…РѕРґРЅС‹Рµ СЃРёРіРЅР°Р»С‹
 		readSignalsDevice();
 		dataExchangeInputs();
 
-		// Выходные сигналы
+		// Р’С‹С…РѕРґРЅС‹Рµ СЃРёРіРЅР°Р»С‹
 		dataExchangeOutputs();
 		Sleep(15);
 		writeSignalsDevice(); // Sleep(10);
@@ -1087,25 +1087,25 @@ void UARTFrontView717::dataExchangeInputs()
 	switch (controllerPosBit)
 	{
 	case 7:
-		controllerPos = 857; // Х3
+		controllerPos = 857; // РҐ3
 		break;
 	case 6:
-		controllerPos = 714; // Х2
+		controllerPos = 714; // РҐ2
 		break;
 	case 5:
-		controllerPos = 571; // Х1
+		controllerPos = 571; // РҐ1
 		break;
 	case 1:
 		controllerPos = 429; // 0
 		break;
 	case 4:
-		controllerPos =	286; // Т1
+		controllerPos =	286; // Рў1
 		break;
 	case 3:
-		controllerPos = 143; // Т1А
+		controllerPos = 143; // Рў1Рђ
 		break;
 	case 2:
-		controllerPos = 0; // Т2
+		controllerPos = 0; // Рў2
 		break;
 	default:
 		break;
@@ -1260,7 +1260,7 @@ void UARTFrontView717::dataExchangeOutputs()
 {
 	EnterCriticalSection(&m_CriticalSection);
 
-	// Индикация
+	// РРЅРґРёРєР°С†РёСЏ
 	auto& outTable = m_NW2VarTableOutput.VarTable;
 	m_Signals.arrOutput[200] = outTable["AR04"].val;
 	m_Signals.arrOutput[201] = outTable["AR0"].val;
@@ -1302,7 +1302,7 @@ void UARTFrontView717::dataExchangeOutputs()
 	m_Signals.arrOutput[286] = outTable["IGLA:Error"].val;
 	m_Signals.arrOutput[287] = outTable["IGLA:Fire"].val;
 
-	// Стрелочная индикация
+	// РЎС‚СЂРµР»РѕС‡РЅР°СЏ РёРЅРґРёРєР°С†РёСЏ
 	m_Signals.arrArrow[0] = stepTC(m_NW2VarTableOutput.GetPackedRatio("BCPressure"));
 	m_Signals.arrArrow[1] = stepNM(m_NW2VarTableOutput.GetPackedRatio("TLPressure"));
 	m_Signals.arrArrow[2] = stepTM(m_NW2VarTableOutput.GetPackedRatio("BLPressure"));
@@ -1310,11 +1310,11 @@ void UARTFrontView717::dataExchangeOutputs()
 	m_Signals.arrArrow[4] = stepKiloVoltmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesVoltage"));
 	m_Signals.arrArrow[5] = stepBattVoltmeter(m_NW2VarTableOutput.GetPackedRatio("BatteryVoltage"));
 
-	// Скоростемер
+	// РЎРєРѕСЂРѕСЃС‚РµРјРµСЂ
 	m_Signals.arr7SegDec[0] = int(m_NW2VarTableOutput.GetPackedRatio("Speed") * 100.0f);
 
-	// Дисплеи
-	// АСОТП
+	// Р”РёСЃРїР»РµРё
+	// РђРЎРћРўРџ
 	int asotpState = outTable["IGLA:State"].val;
 
 	static bool asotpDisplayOn = true;
@@ -1326,7 +1326,7 @@ void UARTFrontView717::dataExchangeOutputs()
 	m_Signals.arrTextDisplay[0].on = m_Signals.arrTextDisplay[0].ledOn = asotpDisplayOn;
 	convertUtf8ToCp1251(m_ASOTPText.c_str(), m_Signals.arrTextDisplay[0].text, 40);
 	
-	// АСНП
+	// РђРЎРќРџ
 	m_Signals.arrTextDisplay[1].on = m_Signals.arrTextDisplay[1].ledOn = (outTable["ASNP:State"].val != 0);
 	convertUtf8ToCp1251(m_ASNPText.c_str(), m_Signals.arrTextDisplay[1].text, 48);
 

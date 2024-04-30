@@ -1,4 +1,4 @@
-/* Project site: https://github.com/bravikov/bit.h */
+﻿/* Project site: https://github.com/bravikov/bit.h */
 
 #ifndef BIT_H_79EC2540_A696_4151_BAAC_6407B520A95C
 #define BIT_H_79EC2540_A696_4151_BAAC_6407B520A95C

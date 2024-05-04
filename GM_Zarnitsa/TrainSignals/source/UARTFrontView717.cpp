@@ -491,14 +491,14 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[191] = NotUsed; // 
 	
 	// 9.1
-	m_Config.arrPins[192] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[193] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[194] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[195] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[196] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[197] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[198] = NotUsed; // Индикатор скорости
-	m_Config.arrPins[199] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[192] = Output; // Индикатор скорости
+	m_Config.arrPins[193] = Output; // Индикатор скорости
+	m_Config.arrPins[194] = Output; // Индикатор скорости
+	m_Config.arrPins[195] = Output; // Индикатор скорости
+	m_Config.arrPins[196] = Output; // Индикатор скорости
+	m_Config.arrPins[197] = Output; // Индикатор скорости
+	m_Config.arrPins[198] = Output; // Индикатор скорости
+	m_Config.arrPins[199] = Output; // Индикатор скорости
 	
 	// 9.2
 	m_Config.arrPins[200] = Output; // ОЧ

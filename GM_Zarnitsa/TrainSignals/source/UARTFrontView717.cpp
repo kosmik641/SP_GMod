@@ -1117,7 +1117,7 @@ void UARTFrontView717::dataExchangeInputs()
 		break;
 	}
 
-	inTable["ReverserPosition"].val = m_Signals.arrInput[26] ? (m_Signals.arrInput[28] ? -1 : 1) : 0;
+	inTable["ReverserPosition"].val = m_Signals.arrInput[26] ? (m_Signals.arrInput[28] ? 0 : 2) : 1; // 0 - Назад, 2 - Вперед
 	inTable["ControllerPosition"].val = controllerPos;
 
 	inTable["ARS"].val = m_Signals.arrInput[32];

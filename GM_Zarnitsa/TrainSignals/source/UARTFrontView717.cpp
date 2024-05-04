@@ -257,15 +257,15 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[4] = NotUsed; // 
 	m_Config.arrPins[5] = NotUsed; // 
 	m_Config.arrPins[6] = NotUsed; // 
-	m_Config.arrPins[7] = InputADC; // Стоп-кран
+	m_Config.arrPins[7] = InputADC; // Стопкран
 
 	// 1.2
 	m_Config.arrPins[8] = Input; // УНЧ     
 	m_Config.arrPins[9] = Input; // Контроль ЭС
 	m_Config.arrPins[10] = Input; // Контр громког
 	m_Config.arrPins[11] = Input; // Радио
-	m_Config.arrPins[12] = Input; // 1-2 программы(прав)
-	m_Config.arrPins[13] = Input; // 1-2 программы(лев)
+	m_Config.arrPins[12] = Input; // Программа 2
+	m_Config.arrPins[13] = Input; // Программа 1
 	m_Config.arrPins[14] = Input; // Закрытие дверей
 	m_Config.arrPins[15] = Input; // ВПР
 
@@ -278,12 +278,12 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[21] = Input; // АСНП: Вверх
 	m_Config.arrPins[22] = Input; // АСНП: Вниз
 	m_Config.arrPins[23] = Input; // АСНП: Меню
-	m_Config.arrPins[24] = InputADC; // КМ-013
 
 	// 2.1
+    m_Config.arrPins[24] = InputADC; // КМ-013
 	m_Config.arrPins[25] = Input; // КВ-70: 10-8
 	m_Config.arrPins[26] = Input; // КВ-70: Реверс вкл
-	m_Config.arrPins[27] = Input; // КВ-70: Выбеш
+	m_Config.arrPins[27] = Input; // КВ-70: Выбег
 	m_Config.arrPins[28] = Input; // КВ-70: Реверс назад
 	m_Config.arrPins[29] = Input; // КВ-70: У2-2
 	m_Config.arrPins[30] = Input; // КВ-70: У2-20Б
@@ -297,7 +297,7 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[36] = Input; // Осв. салона
 	m_Config.arrPins[37] = Input; // Осв. кабины
 	m_Config.arrPins[38] = Input; // Осв. пульта
-	m_Config.arrPins[39] = Input; // ВП
+	m_Config.arrPins[39] = Input; // Вспомогательный поезд
 
 	// 2.3
 	m_Config.arrPins[40] = Input; // Рез. закрытие дверей
@@ -312,7 +312,7 @@ void UARTFrontView717::setupArrays()
 	// 3.1
 	m_Config.arrPins[48] = Input; // Двери торцевые (1 гр.)
 	m_Config.arrPins[49] = Input; // Вентиляция кабины
-	m_Config.arrPins[50] = Input; // Вкл. авар. сигн.
+	m_Config.arrPins[50] = Input; // Вкл. авар. сигн. (2 гр.)
 	m_Config.arrPins[51] = Input; // Защита преобразователя
 	m_Config.arrPins[52] = Input; // Сигнализация
 	m_Config.arrPins[53] = Input; // Звонок
@@ -333,10 +333,10 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[64] = Input; // КРУ1
 	m_Config.arrPins[65] = Input; // КРУ2
 	m_Config.arrPins[66] = NotUsed; // 
-	m_Config.arrPins[67] = Input; // АСОТП1
-	m_Config.arrPins[68] = Input; // АСОТП2
-	m_Config.arrPins[69] = Input; // АСОТП3
-	m_Config.arrPins[70] = Input; // АСОТП4
+	m_Config.arrPins[67] = Input; // АСОТП: Кнопка 1
+	m_Config.arrPins[68] = Input; // АСОТП: Кнопка 2
+	m_Config.arrPins[69] = Input; // АСОТП: Кнопка 3
+	m_Config.arrPins[70] = Input; // АСОТП: Кнопка 4
 	m_Config.arrPins[71] = NotUsed; // 
 
 	// 4.1
@@ -381,10 +381,10 @@ void UARTFrontView717::setupArrays()
 
 	// 5.2
 	m_Config.arrPins[104] = Input; // Разобщ кран кран машиниста
-	m_Config.arrPins[105] = Input; // Стоян. тормоз
+	m_Config.arrPins[105] = Input; // Стояночный тормоз
 	m_Config.arrPins[106] = Input; // ЭПВ-АРС
-	m_Config.arrPins[107] = Input; // Разобщ кран манометров
-	m_Config.arrPins[108] = Input; // Разобщ кран пневмосигнала
+	m_Config.arrPins[107] = NotUsed; // 
+	m_Config.arrPins[108] = NotUsed; // 
 	m_Config.arrPins[109] = NotUsed; // 
 	m_Config.arrPins[110] = NotUsed; // 
 	m_Config.arrPins[111] = NotUsed; // 
@@ -491,14 +491,14 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[191] = NotUsed; // 
 	
 	// 9.1
-	m_Config.arrPins[192] = Output; // Индикатор скорости
-	m_Config.arrPins[193] = Output; // Индикатор скорости
-	m_Config.arrPins[194] = Output; // Индикатор скорости
-	m_Config.arrPins[195] = Output; // Индикатор скорости
-	m_Config.arrPins[196] = Output; // Индикатор скорости
-	m_Config.arrPins[197] = Output; // Индикатор скорости
-	m_Config.arrPins[198] = Output; // Индикатор скорости
-	m_Config.arrPins[199] = Output; // Индикатор скорости
+	m_Config.arrPins[192] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[193] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[194] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[195] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[196] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[197] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[198] = NotUsed; // Индикатор скорости
+	m_Config.arrPins[199] = NotUsed; // Индикатор скорости
 	
 	// 9.2
 	m_Config.arrPins[200] = Output; // ОЧ
@@ -537,7 +537,7 @@ void UARTFrontView717::setupArrays()
 	m_Config.arrPins[227] = Output; // Двери левые (левая) светодиод
 	m_Config.arrPins[228] = Output; // Двери левые (правая) светодиод
 	m_Config.arrPins[229] = Output; // РП светодиод
-	m_Config.arrPins[230] = Output; // Защита преобраз.
+	m_Config.arrPins[230] = Output; // Защита преобраз. светодиод
 	m_Config.arrPins[231] = Output; // Лампа контроля невключения вентиляции
 	
 	// 10.3
@@ -603,10 +603,10 @@ void UARTFrontView717::setupArrays()
 	// 12.3
 	m_Config.arrPins[280] = NotUsed; // 
 	m_Config.arrPins[281] = NotUsed; // 
-	m_Config.arrPins[282] = Output; // АСОТП: Кнопка 4
-	m_Config.arrPins[283] = Output; // АСОТП: Кнопка 3
-	m_Config.arrPins[284] = Output; // АСОТП: Кнопка 2
-	m_Config.arrPins[285] = Output; // АСОТП: Кнопка 1
+	m_Config.arrPins[282] = Output; // АСОТП: LED 4
+	m_Config.arrPins[283] = Output; // АСОТП: LED 3
+	m_Config.arrPins[284] = Output; // АСОТП: LED 2
+	m_Config.arrPins[285] = Output; // АСОТП: LED 1
 	m_Config.arrPins[286] = Output; // АСОТП: НЕИСПР.
 	m_Config.arrPins[287] = Output; // АСОТП: ПОЖАР !
 	
@@ -1083,35 +1083,41 @@ void UARTFrontView717::dataExchangeInputs()
 	inTable["R_ASNPMenu"].val = m_Signals.arrInput[23];
 
 	static int controllerPos = 0;
-	int controllerPosBit = (m_Signals.arrInput[29] << 2) | (m_Signals.arrInput[30] << 1) | (m_Signals.arrInput[31]);
+	int controllerPosBit =
+		(m_Signals.arrInput[25] << 4) | 
+		(m_Signals.arrInput[27] << 3) | 
+		(m_Signals.arrInput[29] << 2) | 
+		(m_Signals.arrInput[30] << 1) | 
+		(m_Signals.arrInput[31]);
+
 	switch (controllerPosBit)
 	{
-	case 7:
+	case 0x05:
 		controllerPos = 857; // Х3
 		break;
-	case 6:
+	case 0x04:
 		controllerPos = 714; // Х2
 		break;
-	case 5:
+	case 0x00:
 		controllerPos = 571; // Х1
 		break;
-	case 1:
+	case 0x08:
 		controllerPos = 429; // 0
 		break;
-	case 4:
+	case 0x02:
 		controllerPos =	286; // Т1
 		break;
-	case 3:
+	case 0x06:
 		controllerPos = 143; // Т1А
 		break;
-	case 2:
+	case 0x16:
 		controllerPos = 0; // Т2
 		break;
 	default:
 		break;
 	}
 
-	inTable["ReverserPosition"].val = m_Signals.arrInput[26] ? 2 : m_Signals.arrInput[28] ? 0 : 1;
+	inTable["ReverserPosition"].val = m_Signals.arrInput[26] ? (m_Signals.arrInput[28] ? -1 : 1) : 0;
 	inTable["ControllerPosition"].val = controllerPos;
 
 	inTable["ARS"].val = m_Signals.arrInput[32];

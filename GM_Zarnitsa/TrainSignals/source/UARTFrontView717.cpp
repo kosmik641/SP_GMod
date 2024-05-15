@@ -1348,7 +1348,7 @@ void UARTFrontView717::dataExchangeOutputs()
 	m_Signals.arrArrow[5] = stepBattVoltmeter(m_NW2VarTableOutput.GetPackedRatio("BatteryVoltage"));
 
 	// Скоростемер
-	m_Signals.arr7SegDec[0] = int(m_NW2VarTableOutput.GetPackedRatio("Speed") * 100.0f);
+	m_Signals.arr7SegDec[0] = outTable["LUDS"].val ? int(m_NW2VarTableOutput.GetPackedRatio("Speed") * 100.0f) : -1;
 
 	// Дисплеи
 	// АСОТП
@@ -1613,6 +1613,9 @@ void UARTFrontView717::readBattVoltmerCalibrations()
 static byte byte7DecSeg[] = { 0x00,0x08,0x01,0x09,0x02,0x0A,0x03,0x0B,0x04,0x0C };
 byte UARTFrontView717::convertIntTo7DecSegByte(int number)
 {
+	if (number == -1)
+		return 0xFF;
+
 	number = number % 100;
 
 	int number1 = number % 10;

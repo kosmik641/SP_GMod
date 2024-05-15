@@ -29,6 +29,7 @@ int UARTFrontView717::start(int port)
 	m_PortNumber = port;
 
 	setupArrays();
+	loadSleepTimings();
 	loadCalibartions();
 
 	m_DeviceThread = std::thread(&UARTFrontView717::deviceThreadFunc, this);
@@ -49,11 +50,41 @@ void UARTFrontView717::stop(bool force)
 	m_ThreadForceStop = force;
 }
 
+void UARTFrontView717::loadSleepTimings(bool printTimes)
+{
+#ifdef SHOW_CONSOLE
+	printf("%s\n", __FUNCSIG__);
+#endif
+
+	DWORD dwAttrib = GetFileAttributes(SLEEPTIMINGS_FILE);
+	if (dwAttrib == INVALID_FILE_ATTRIBUTES)
+	{
+		PRINT_MSG_ERROR("Sleep timings file %s not found!\n", SLEEPTIMINGS_FILE);
+		return;
+	}
+
+	readSleepTimes();
+
+	if (printTimes)
+	{
+		PRINT_MSG("Sleep timings:\n");
+		PRINT_MSG("    AfterRead = %u ms\n",m_sleepTimes.afterRead);
+		PRINT_MSG("    AfterWriteSignals = %u ms\n",m_sleepTimes.afterWriteSignals);
+		PRINT_MSG("    AfterWriteUART = %u ms\n",m_sleepTimes.afterWriteUART);
+		PRINT_MSG("    AfterAll = %u ms\n",m_sleepTimes.afterAll);
+	}
+}
+
 void UARTFrontView717::loadCalibartions(bool printCalib)
 {
 #ifdef SHOW_CONSOLE
 	printf("%s\n", __FUNCSIG__);
 #endif
+	
+	DWORD dwAttrib = GetFileAttributes(CALIBRATIONS_FILE);
+	if (dwAttrib == INVALID_FILE_ATTRIBUTES)
+		createCalibrationsFile();
+
 	readStopcraneCalibrations();
 	readKM013Calibrations();
 
@@ -133,7 +164,7 @@ int UARTFrontView717::openCOMPort(int port)
 
 	char portPath[7];
 	wsprintf(portPath, "COM%d", port);
-	m_hPort = CreateFile(portPath, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+	m_hPort = CreateFile(portPath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
 
 	if (m_hPort == INVALID_HANDLE_VALUE)
 	{
@@ -875,6 +906,7 @@ void UARTFrontView717::readSignalsDevice()
 				i_Byte++;
 		}
 	}
+	Sleep(m_sleepTimes.afterRead);
 }
 
 void UARTFrontView717::writeSignalsDevice()
@@ -903,7 +935,7 @@ void UARTFrontView717::writeSignalsDevice()
 	}
 
 	WriteFile(m_hPort, outBytes, m_Data.nOutputBytes + 2, nullptr, nullptr);
-	Sleep(10);
+	Sleep(m_sleepTimes.afterWriteSignals);
 }
 
 void UARTFrontView717::writeUARTDevice()
@@ -952,7 +984,7 @@ void UARTFrontView717::writeUARTDevice()
 	}
 
 	WriteFile(m_hPort, uartBytes, m_Data.nUARTBytes + 2, nullptr, nullptr);
-	Sleep(10);
+	Sleep(m_sleepTimes.afterWriteUART);
 }
 
 void UARTFrontView717::writeShutdownDevice()
@@ -1042,10 +1074,9 @@ void UARTFrontView717::deviceThreadFunc()
 
 		// Выходные сигналы
 		dataExchangeOutputs();
-		Sleep(15);
-		writeSignalsDevice(); // Sleep(10);
-		writeUARTDevice();    // Sleep(10);
-		Sleep(10);
+		writeSignalsDevice();
+		writeUARTDevice();
+		Sleep(m_sleepTimes.afterAll);
 	}
 
 	if (!m_ThreadForceStop)
@@ -1355,6 +1386,16 @@ void UARTFrontView717::destroyHandle()
 	m_hPort = INVALID_HANDLE_VALUE;
 }
 
+bool UARTFrontView717::createCalibrationsFile()
+{
+	auto hFile = CreateFile(CALIBRATIONS_FILE, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (hFile == INVALID_HANDLE_VALUE)
+		return false;
+
+	CloseHandle(hFile);
+	return true;
+}
+
 bool UARTFrontView717::adcStopcrane(int adc)
 {
 	bool retVal = false;
@@ -1482,6 +1523,14 @@ int UARTFrontView717::stepBattVoltmeter(float value)
 		return minmax(retVal, m_Min, m_Max);
 	else
 		return minmax(retVal, m_Max, m_Min);
+}
+
+void UARTFrontView717::readSleepTimes()
+{
+	m_sleepTimes.afterRead = GetPrivateProfileInt("Sleep", "AfterRead", 5, SLEEPTIMINGS_FILE);
+	m_sleepTimes.afterWriteSignals = GetPrivateProfileInt("Sleep", "AfterWriteSignals", 25, SLEEPTIMINGS_FILE);
+	m_sleepTimes.afterWriteUART = GetPrivateProfileInt("Sleep", "AfterWriteUART", 30, SLEEPTIMINGS_FILE);
+	m_sleepTimes.afterAll = GetPrivateProfileInt("Sleep", "AfterAll", 30, SLEEPTIMINGS_FILE);
 }
 
 void UARTFrontView717::readStopcraneCalibrations()

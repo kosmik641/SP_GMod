@@ -41,6 +41,7 @@ public:
 	int start(int port);
 	void stop(bool force = false);
 
+	void loadSleepTimings(bool printTimes = false);
 	void loadCalibartions(bool printCalib = false);
 
 	bool isConnected();
@@ -72,6 +73,8 @@ private:
 
 	void destroyHandle();
 
+	bool createCalibrationsFile();
+
 	bool adcStopcrane(int adc);
 	int adcKM013(int adc);
 
@@ -82,6 +85,8 @@ private:
 	int stepKiloVoltmeter(float value);
 	int stepAmmeter(float value);
 	int stepBattVoltmeter(float value);
+
+	void readSleepTimes();
 
 	void readStopcraneCalibrations();
 	void readKM013Calibrations();
@@ -104,6 +109,14 @@ private:
 	bool m_ThreadRunning = false;
 	bool m_ThreadStop = true;
 	bool m_ThreadForceStop = false;
+
+	struct SleepTimes
+	{
+		DWORD afterRead = 5;
+		DWORD afterWriteSignals = 25;
+		DWORD afterWriteUART = 30;
+		DWORD afterAll = 30;
+	} m_sleepTimes;
 
 	struct SevenDecSignals
 	{

@@ -14,10 +14,13 @@ concommand.Add("zarn_stop",function(ply,cmd,args)
     if TrainSignals.Module then TrainSignals.Module.Stop() end
 end,nil,"Stop TrainSignals module. Usage: zarn_stop")
 
-
-concommand.Add("zarn_reload",function(ply,cmd,args)
+concommand.Add("zarn_reload_calibrations",function(ply,cmd,args)
     if TrainSignals.Module then TrainSignals.Module.LoadCalibrations(args[1]) end
-end,nil,"Reload calibrations from file. Usage: zarn_reload [true for print values]")
+end,nil,"Reload calibrations from file. Usage: zarn_reload_calibrations [true for print values]")
+
+concommand.Add("zarn_reload_sleeps",function(ply,cmd,args)
+    if TrainSignals.Module then TrainSignals.Module.LoadSleepTimings(args[1]) end
+end,nil,"Reload sleep timings from file. Usage: zarn_reload_sleeps [true for print values]")
 
 concommand.Add("zarn_force_stop",function(ply,cmd,args)
     if TrainSignals.Module then TrainSignals.Module.ForceStop() end

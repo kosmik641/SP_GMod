@@ -157,14 +157,22 @@ LUA_FUNCTION(API_ForceStop)
 	return 0;
 }
 
+LUA_FUNCTION(API_LoadSleepTimings)
+{
+	EnterCriticalSection(g_CriticalSection);
+	g_Device.loadSleepTimings(LUA->GetBool(1));
+	LeaveCriticalSection(g_CriticalSection);
+
+	PRINT_MSG("Sleep timings loaded!\n");
+	return 0;
+}
+
 LUA_FUNCTION(API_LoadCalibraions)
 {
-	if (g_Device.isConnected())
-	{
-		PRINT_MSG_ERROR("Disconnect before reload calibrations!\n");
-		return 0;
-	}
+	EnterCriticalSection(g_CriticalSection);
 	g_Device.loadCalibartions(LUA->GetBool(1));
+	LeaveCriticalSection(g_CriticalSection);
+
 	PRINT_MSG("Calibrations loaded!\n");
 	return 0;
 }
@@ -202,6 +210,7 @@ GMOD_MODULE_OPEN()
 			PushCFunc(API_Stop, "Stop");
 			PushCFunc(API_ForceStop, "ForceStop");
 			PushCFunc(API_DataExchange, "DataExchange");
+			PushCFunc(API_LoadSleepTimings, "LoadSleepTimings");
 			PushCFunc(API_LoadCalibraions, "LoadCalibrations");
 			PushCFunc(API_IsConnected, "IsConnected");
 			PushCFunc(API_Version, "Version");

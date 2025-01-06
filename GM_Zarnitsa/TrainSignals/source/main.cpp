@@ -4,15 +4,13 @@ using namespace GarrysMod::Lua;
 
 LUA_FUNCTION(API_Start)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif // SHOW_CONSOLE
+	PRINT_FUNCSIG;
 
 	LUA->CheckType(1, Type::Number);
 
-	if (g_Device.isConnected())
+	if (g_Device.IsConnected())
 	{
-		PRINT_MSG("Already connected to COM%d\n", g_Device.getPortNumber());
+		PRINT_MSG("Already connected to COM%d\n", g_Device.GetPortNumber());
 		return 0;
 	}
 
@@ -23,22 +21,20 @@ LUA_FUNCTION(API_Start)
 		return 0;
 	}
 
-	g_Device.start(inPortnumber);
+	g_Device.Start(inPortnumber);
 	return 0;
 }
 
 LUA_FUNCTION(API_Stop)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif // SHOW_CONSOLE
+	PRINT_FUNCSIG;
 
-	if (!g_Device.isConnected())
+	if (!g_Device.IsConnected())
 	{
 		PRINT_MSG("Not connected\n");
 		return 0;
 	}
-	g_Device.stop();
+	g_Device.Stop();
 
 	PRINT_MSG("Set disconnected.\n");
 	return 0;
@@ -46,11 +42,9 @@ LUA_FUNCTION(API_Stop)
 
 LUA_FUNCTION(API_DataExchange)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif // SHOW_CONSOLE
+	PRINT_FUNCSIG;
 
-	if (!g_Device.isConnected())
+	if (!g_Device.IsConnected())
 		return 0;
 
 	auto& tableOut = g_Device.m_NW2VarTableOutput.VarTable;
@@ -149,10 +143,9 @@ LUA_FUNCTION(API_DataExchange)
 
 LUA_FUNCTION(API_ForceStop)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif // SHOW_CONSOLE
-	g_Device.stop(true);
+	PRINT_FUNCSIG;
+
+	g_Device.Stop(true);
 	PRINT_MSG("Set force disconnected.\n");
 	return 0;
 }
@@ -160,7 +153,7 @@ LUA_FUNCTION(API_ForceStop)
 LUA_FUNCTION(API_LoadSleepTimings)
 {
 	EnterCriticalSection(g_CriticalSection);
-	g_Device.loadSleepTimings(LUA->GetBool(1));
+	g_Device.LoadSleepTimings();
 	LeaveCriticalSection(g_CriticalSection);
 
 	PRINT_MSG("Sleep timings loaded!\n");
@@ -170,7 +163,7 @@ LUA_FUNCTION(API_LoadSleepTimings)
 LUA_FUNCTION(API_LoadCalibraions)
 {
 	EnterCriticalSection(g_CriticalSection);
-	g_Device.loadCalibartions(LUA->GetBool(1));
+	g_Device.LoadCalibartions();
 	LeaveCriticalSection(g_CriticalSection);
 
 	PRINT_MSG("Calibrations loaded!\n");
@@ -179,7 +172,7 @@ LUA_FUNCTION(API_LoadCalibraions)
 
 LUA_FUNCTION(API_IsConnected)
 {
-	LUA->PushBool(g_Device.isConnected());
+	LUA->PushBool(g_Device.IsConnected());
 	return 1;
 }
 
@@ -191,10 +184,9 @@ LUA_FUNCTION(API_Version)
 
 GMOD_MODULE_OPEN()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif // SHOW_CONSOLE
-	g_CriticalSection = g_Device.getCriticalSection();
+	PRINT_FUNCSIG;
+
+	g_CriticalSection = g_Device.GetCriticalSection();
 	if (!g_CriticalSection)
 	{
 		PRINT_MSG_ERROR("Failed to get g_CriticalSection.\n");
@@ -232,11 +224,9 @@ GMOD_MODULE_OPEN()
 
 GMOD_MODULE_CLOSE()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif // SHOW_CONSOLE
+	PRINT_FUNCSIG;
 
-	g_Device.stop();
+	g_Device.Stop();
 
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
 		LUA->GetField(-1, "TrainSignals");
@@ -251,11 +241,10 @@ GMOD_MODULE_CLOSE()
 #endif
 
 	PRINT_MSG("Module unloaded!\n");
-	if (g_Device.isConnected())
+	if (g_Device.IsConnected())
 	{
 		PRINT_MSG_ERROR("Warning! Thread is running.\n");
 	}
-
 
 	return 0;
 }

@@ -7,7 +7,6 @@
 
 #include <Windows.h>
 #include <iostream>
-#include <Color.h>
 #include <GarrysMod/Lua/Interface.h>
 #include "UARTFrontView717.h"
 

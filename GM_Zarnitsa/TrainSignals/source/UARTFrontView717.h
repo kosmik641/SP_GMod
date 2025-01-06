@@ -6,8 +6,6 @@
 #include <string>
 #include <thread>
 #include <map>
-#include <Color.h>
-#include <dbg.h>
 
 #define minmax(_val,_min,_max) max(_min, min(_val, _max))
 
@@ -38,16 +36,16 @@ public:
 	UARTFrontView717();
 	~UARTFrontView717();
 
-	int start(int port);
-	void stop(bool force = false);
+	int Start(int port);
+	void Stop(bool force = false);
 
-	void loadSleepTimings(bool printTimes = false);
-	void loadCalibartions(bool printCalib = false);
+	void LoadSleepTimings();
+	void LoadCalibartions();
 
-	bool isConnected();
-	int getPortNumber();
+	bool IsConnected();
+	int GetPortNumber();
 
-	CRITICAL_SECTION* getCriticalSection();
+	CRITICAL_SECTION* GetCriticalSection();
 
 	NW2VarTable m_NW2VarTableInput;
 	NW2VarTable m_NW2VarTableOutput;
@@ -60,46 +58,46 @@ private:
 		Output,
 		InputADC
 	};
-	int openCOMPort(int port);
-	void setupArrays();
-	void deviceThreadFunc();
-	int setupDevice();
-	void readSignalsDevice();
-	void writeSignalsDevice();
-	void writeUARTDevice();
-	void writeShutdownDevice();
-	void dataExchangeInputs();
-	void dataExchangeOutputs();
+	int OpenCOMPort(int port);
+	void SetupArrays();
+	void DeviceThreadFunc();
+	int SetupDevice();
+	void ReadSignalsDevice();
+	void WriteSignalsDevice();
+	void WriteUARTDevice();
+	void WriteShutdownDevice();
+	void DataExchangeInputs();
+	void DataExchangeOutputs();
 
-	void destroyHandle();
+	void DestroyHandle();
 
-	bool createCalibrationsFile();
+	bool CreateCalibrationsFile();
 
-	bool adcStopcrane(int adc);
-	int adcKM013(int adc);
+	bool ADCStopcrane(int adc);
+	int ADCKM013(int adc);
 
-	int stepTC(float value);
-	int stepNM(float value);
-	int stepTM(float value);
+	int StepTC(float value);
+	int StepNM(float value);
+	int StepTM(float value);
 
-	int stepKiloVoltmeter(float value);
-	int stepAmmeter(float value);
-	int stepBattVoltmeter(float value);
+	int StepKiloVoltmeter(float value);
+	int StepAmmeter(float value);
+	int StepBattVoltmeter(float value);
 
-	void readSleepTimes();
+	void ReadSleepTimes();
 
-	void readStopcraneCalibrations();
-	void readKM013Calibrations();
+	void ReadStopcraneCalibrations();
+	void ReadKM013Calibrations();
 
-	void readTCCalibrations();
-	void readNMCalibrations();
-	void readTMCalibrations();
+	void ReadTCCalibrations();
+	void ReadNMCalibrations();
+	void ReadTMCalibrations();
 
-	void readKiloVoltmeterCalibrations();
-	void readAmmeterCalibrations();
-	void readBattVoltmerCalibrations();
+	void ReadKiloVoltmeterCalibrations();
+	void ReadAmmeterCalibrations();
+	void ReadBattVoltmerCalibrations();
 
-	static byte convertIntTo7DecSegByte(int number);
+	static byte ConvertIntTo7DecSegByte(int number);
 
 	HANDLE m_hPort = INVALID_HANDLE_VALUE;
 	CRITICAL_SECTION m_CriticalSection{};

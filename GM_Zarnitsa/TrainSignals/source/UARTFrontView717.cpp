@@ -2,47 +2,41 @@
 
 UARTFrontView717::UARTFrontView717()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
 
 	InitializeCriticalSection(&m_CriticalSection);
 }
 
 UARTFrontView717::~UARTFrontView717()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
 
 	DeleteCriticalSection(&m_CriticalSection);
 }
 
-int UARTFrontView717::start(int port)
+int UARTFrontView717::Start(int port)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
-	int openResult = openCOMPort(port);
+	PRINT_FUNCSIG;
+
+	int openResult = OpenCOMPort(port);
 	if (openResult)
 		return openResult;
 	m_PortNumber = port;
 
-	setupArrays();
-	loadSleepTimings();
-	loadCalibartions();
+	SetupArrays();
+	LoadSleepTimings();
+	LoadCalibartions();
 
-	m_DeviceThread = std::thread(&UARTFrontView717::deviceThreadFunc, this);
+	m_DeviceThread = std::thread(&UARTFrontView717::DeviceThreadFunc, this);
 	m_DeviceThread.detach();
 
 	return 0;
 }
 
-void UARTFrontView717::stop(bool force)
+void UARTFrontView717::Stop(bool force)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	if (!m_Connected)
 		return;
 
@@ -50,11 +44,9 @@ void UARTFrontView717::stop(bool force)
 	m_ThreadForceStop = force;
 }
 
-void UARTFrontView717::loadSleepTimings(bool printTimes)
+void UARTFrontView717::LoadSleepTimings()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
 
 	DWORD dwAttrib = GetFileAttributes(SLEEPTIMINGS_FILE);
 	if (dwAttrib == INVALID_FILE_ATTRIBUTES)
@@ -63,99 +55,90 @@ void UARTFrontView717::loadSleepTimings(bool printTimes)
 		return;
 	}
 
-	readSleepTimes();
+	ReadSleepTimes();
 
-	if (printTimes)
-	{
-		PRINT_MSG("Sleep timings:\n");
-		PRINT_MSG("    AfterRead = %u ms\n",m_sleepTimes.afterRead);
-		PRINT_MSG("    AfterWriteSignals = %u ms\n",m_sleepTimes.afterWriteSignals);
-		PRINT_MSG("    AfterWriteUART = %u ms\n",m_sleepTimes.afterWriteUART);
-		PRINT_MSG("    AfterAll = %u ms\n",m_sleepTimes.afterAll);
-	}
+	PRINT_MSG_DBG("Sleep timings:\n");
+	PRINT_MSG_DBG("    AfterRead = %u ms\n",m_sleepTimes.afterRead);
+	PRINT_MSG_DBG("    AfterWriteSignals = %u ms\n",m_sleepTimes.afterWriteSignals);
+	PRINT_MSG_DBG("    AfterWriteUART = %u ms\n",m_sleepTimes.afterWriteUART);
+	PRINT_MSG_DBG("    AfterAll = %u ms\n",m_sleepTimes.afterAll);
 }
 
-void UARTFrontView717::loadCalibartions(bool printCalib)
+void UARTFrontView717::LoadCalibartions()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
 	
 	DWORD dwAttrib = GetFileAttributes(CALIBRATIONS_FILE);
 	if (dwAttrib == INVALID_FILE_ATTRIBUTES)
-		createCalibrationsFile();
+		CreateCalibrationsFile();
 
-	readStopcraneCalibrations();
-	readKM013Calibrations();
+	ReadStopcraneCalibrations();
+	ReadKM013Calibrations();
 
-	readTCCalibrations();
-	readNMCalibrations();
-	readTMCalibrations();
-	readKiloVoltmeterCalibrations();
-	readAmmeterCalibrations();
-	readBattVoltmerCalibrations();
+	ReadTCCalibrations();
+	ReadNMCalibrations();
+	ReadTMCalibrations();
+	ReadKiloVoltmeterCalibrations();
+	ReadAmmeterCalibrations();
+	ReadBattVoltmerCalibrations();
 
-	if (printCalib)
-	{
-		PRINT_MSG("Stopcrane:\n");
-		PRINT_MSG("    Off = %d\n", m_StopcraneCalib.m_Off);
-		PRINT_MSG("    On  = %d\n", m_StopcraneCalib.m_On);
+	PRINT_MSG_DBG("Stopcrane:\n");
+	PRINT_MSG_DBG("    Off = %d\n", m_StopcraneCalib.m_Off);
+	PRINT_MSG_DBG("    On  = %d\n", m_StopcraneCalib.m_On);
 
-		PRINT_MSG("KM013:\n");
-		PRINT_MSG("    Pos1 = %d\n", m_KM013Calib.m_Pos1);
-		PRINT_MSG("    Pos2 = %d\n", m_KM013Calib.m_Pos2);
-		PRINT_MSG("    Pos3 = %d\n", m_KM013Calib.m_Pos3);
-		PRINT_MSG("    Pos4 = %d\n", m_KM013Calib.m_Pos4);
-		PRINT_MSG("    Pos5 = %d\n", m_KM013Calib.m_Pos5);
-		PRINT_MSG("    Pos6 = %d\n", m_KM013Calib.m_Pos6);
-		PRINT_MSG("    Pos7 = %d\n", m_KM013Calib.m_Pos7);
+	PRINT_MSG_DBG("KM013:\n");
+	PRINT_MSG_DBG("    Pos1 = %d\n", m_KM013Calib.m_Pos1);
+	PRINT_MSG_DBG("    Pos2 = %d\n", m_KM013Calib.m_Pos2);
+	PRINT_MSG_DBG("    Pos3 = %d\n", m_KM013Calib.m_Pos3);
+	PRINT_MSG_DBG("    Pos4 = %d\n", m_KM013Calib.m_Pos4);
+	PRINT_MSG_DBG("    Pos5 = %d\n", m_KM013Calib.m_Pos5);
+	PRINT_MSG_DBG("    Pos6 = %d\n", m_KM013Calib.m_Pos6);
+	PRINT_MSG_DBG("    Pos7 = %d\n", m_KM013Calib.m_Pos7);
 
-		PRINT_MSG("TC:\n");
-		PRINT_MSG("    Min = %d\n", m_TCCalib.m_Min);
-		PRINT_MSG("    Max = %d\n", m_TCCalib.m_Max);
+	PRINT_MSG_DBG("TC:\n");
+	PRINT_MSG_DBG("    Min = %d\n", m_TCCalib.m_Min);
+	PRINT_MSG_DBG("    Max = %d\n", m_TCCalib.m_Max);
 
-		PRINT_MSG("NM:\n");
-		PRINT_MSG("    Min = %d\n", m_NMCalib.m_Min);
-		PRINT_MSG("    Max = %d\n", m_NMCalib.m_Max);
+	PRINT_MSG_DBG("NM:\n");
+	PRINT_MSG_DBG("    Min = %d\n", m_NMCalib.m_Min);
+	PRINT_MSG_DBG("    Max = %d\n", m_NMCalib.m_Max);
 
-		PRINT_MSG("TM:\n");
-		PRINT_MSG("    Min = %d\n", m_TMCalib.m_Min);
-		PRINT_MSG("    Max = %d\n", m_TMCalib.m_Max);
+	PRINT_MSG_DBG("TM:\n");
+	PRINT_MSG_DBG("    Min = %d\n", m_TMCalib.m_Min);
+	PRINT_MSG_DBG("    Max = %d\n", m_TMCalib.m_Max);
 
-		PRINT_MSG("KiloVoltmeter:\n");
-		PRINT_MSG("    Min = %d\n", m_KiloVoltmeterCalib.m_Min);
-		PRINT_MSG("    Max = %d\n", m_KiloVoltmeterCalib.m_Max);
+	PRINT_MSG_DBG("KiloVoltmeter:\n");
+	PRINT_MSG_DBG("    Min = %d\n", m_KiloVoltmeterCalib.m_Min);
+	PRINT_MSG_DBG("    Max = %d\n", m_KiloVoltmeterCalib.m_Max);
 
-		PRINT_MSG("Ammeter:\n");
-		PRINT_MSG("    Min = %d\n", m_AmmeterCalib.m_Min);
-		PRINT_MSG("    Max = %d\n", m_AmmeterCalib.m_Max);
+	PRINT_MSG_DBG("Ammeter:\n");
+	PRINT_MSG_DBG("    Min = %d\n", m_AmmeterCalib.m_Min);
+	PRINT_MSG_DBG("    Max = %d\n", m_AmmeterCalib.m_Max);
 
-		PRINT_MSG("BattVoltmeter:\n");
-		PRINT_MSG("    Min = %d\n", m_BattVoltmeterCalib.m_Min);
-		PRINT_MSG("    Max = %d\n", m_BattVoltmeterCalib.m_Max);
-	}
+	PRINT_MSG_DBG("BattVoltmeter:\n");
+	PRINT_MSG_DBG("    Min = %d\n", m_BattVoltmeterCalib.m_Min);
+	PRINT_MSG_DBG("    Max = %d\n", m_BattVoltmeterCalib.m_Max);
 }
 
-bool UARTFrontView717::isConnected()
+bool UARTFrontView717::IsConnected()
 {
 	return m_Connected;
 }
 
-int UARTFrontView717::getPortNumber()
+int UARTFrontView717::GetPortNumber()
 {
 	return m_PortNumber;
 }
 
-CRITICAL_SECTION* UARTFrontView717::getCriticalSection()
+CRITICAL_SECTION* UARTFrontView717::GetCriticalSection()
 {
 	return &m_CriticalSection;
 }
 
-int UARTFrontView717::openCOMPort(int port)
+int UARTFrontView717::OpenCOMPort(int port)
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	if (port < 1 || port > 254)
 	{
 		PRINT_MSG_ERROR("Port number %d not in range 1-254!", port);
@@ -179,7 +162,7 @@ int UARTFrontView717::openCOMPort(int port)
 	if (!success)
 	{
 		PRINT_MSG_ERROR("GetCommState failed.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x01;
 	}
 
@@ -192,7 +175,7 @@ int UARTFrontView717::openCOMPort(int port)
 	if (!success)
 	{
 		PRINT_MSG_ERROR("SetCommState failed.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x02;
 	}
 
@@ -200,7 +183,7 @@ int UARTFrontView717::openCOMPort(int port)
 	if (!success)
 	{
 		PRINT_MSG_ERROR("SetCommMask failed.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x03;
 	}
 
@@ -209,7 +192,7 @@ int UARTFrontView717::openCOMPort(int port)
 	if (!success)
 	{
 		PRINT_MSG_ERROR("GetCommTimeouts failed.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x04;
 	}
 
@@ -222,7 +205,7 @@ int UARTFrontView717::openCOMPort(int port)
 	if (!success)
 	{
 		PRINT_MSG_ERROR("SetCommTimeouts failed.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x05;
 	}
 
@@ -230,7 +213,7 @@ int UARTFrontView717::openCOMPort(int port)
 	if (!success)
 	{
 		PRINT_MSG_ERROR("SetupComm failed.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x06;
 	}
 
@@ -247,18 +230,17 @@ int UARTFrontView717::openCOMPort(int port)
 	if (answerBuf != 0x66)
 	{
 		PRINT_MSG_ERROR("Wrong answer.\n");
-		destroyHandle();
+		DestroyHandle();
 		return 0x10;
 	}
 
 	return 0;
 }
 
-void UARTFrontView717::setupArrays()
+void UARTFrontView717::SetupArrays()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	// Количество контроллеров
 	int nControllers = 14;
 
@@ -771,11 +753,10 @@ void UARTFrontView717::setupArrays()
 	PRINT_MSG_DBG("m_Signals.arrTextDisplay.count = %d\n", nTextDisplays);
 }
 
-int UARTFrontView717::setupDevice()
+int UARTFrontView717::SetupDevice()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	int nInputBytes = 3 * m_Config.nControllers;
 	int nOutputBytes = 3 * m_Config.nControllers;
 	int nUARTBytes = 0;
@@ -868,11 +849,11 @@ int UARTFrontView717::setupDevice()
 	m_Data.arrOutputBytes.release();
 	m_Data.arrUARTBytes.release();
 
-	destroyHandle();
+	DestroyHandle();
 	return 0x20;
 }
 
-void UARTFrontView717::readSignalsDevice()
+void UARTFrontView717::ReadSignalsDevice()
 {
 	static byte cmdRead[]{0x00, 0x85};
 	WriteFile(m_hPort,&cmdRead, 2, nullptr, nullptr);
@@ -909,7 +890,7 @@ void UARTFrontView717::readSignalsDevice()
 	Sleep(m_sleepTimes.afterRead);
 }
 
-void UARTFrontView717::writeSignalsDevice()
+void UARTFrontView717::WriteSignalsDevice()
 {
 	auto outBytes = m_Data.arrOutputBytes.get();
 	outBytes[0] = (byte)m_Data.nOutputBytes;
@@ -929,7 +910,7 @@ void UARTFrontView717::writeSignalsDevice()
 		{
 			if (m_Config.arr7SegDec[i_Controller].port[i_Port])
 			{
-				outBytes[i_Controller * 3 + i_Port + 2] = convertIntTo7DecSegByte(m_Signals.arr7SegDec[i_7SegDecSignals++]);
+				outBytes[i_Controller * 3 + i_Port + 2] = ConvertIntTo7DecSegByte(m_Signals.arr7SegDec[i_7SegDecSignals++]);
 			}
 		}
 	}
@@ -938,7 +919,7 @@ void UARTFrontView717::writeSignalsDevice()
 	Sleep(m_sleepTimes.afterWriteSignals);
 }
 
-void UARTFrontView717::writeUARTDevice()
+void UARTFrontView717::WriteUARTDevice()
 {
 	if (!m_Data.nUARTBytes)
 		return;
@@ -987,11 +968,10 @@ void UARTFrontView717::writeUARTDevice()
 	Sleep(m_sleepTimes.afterWriteUART);
 }
 
-void UARTFrontView717::writeShutdownDevice()
+void UARTFrontView717::WriteShutdownDevice()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	PRINT_MSG("Send shutdown data...\n");
 	// Отправка UART
 	if (m_Data.nUARTBytes > 0)
@@ -1049,13 +1029,13 @@ void UARTFrontView717::writeShutdownDevice()
 	WriteFile(m_hPort, disableBytes.get(), disableBytesSize, nullptr, nullptr);
 }
 
-void UARTFrontView717::deviceThreadFunc()
+void UARTFrontView717::DeviceThreadFunc()
 {
 	m_ThreadRunning = true;
 	m_ThreadStop = false;
 	m_ThreadForceStop = false;
 
-	int setupResult = setupDevice();
+	int setupResult = SetupDevice();
 	if (setupResult)
 	{
 		m_ThreadStop = true;
@@ -1069,20 +1049,20 @@ void UARTFrontView717::deviceThreadFunc()
 	while (!m_ThreadStop)
 	{
 		// Входные сигналы
-		readSignalsDevice();
-		dataExchangeInputs();
+		ReadSignalsDevice();
+		DataExchangeInputs();
 
 		// Выходные сигналы
-		dataExchangeOutputs();
-		writeSignalsDevice();
-		writeUARTDevice();
+		DataExchangeOutputs();
+		WriteSignalsDevice();
+		WriteUARTDevice();
 		Sleep(m_sleepTimes.afterAll);
 	}
 
 	if (!m_ThreadForceStop)
-		writeShutdownDevice();
+		WriteShutdownDevice();
 
-	destroyHandle();
+	DestroyHandle();
 
 	m_NW2VarTableInput.VarTable.clear();
 	m_NW2VarTableOutput.VarTable.clear();
@@ -1091,7 +1071,7 @@ void UARTFrontView717::deviceThreadFunc()
 	PRINT_MSG("Thread working end.\n");
 }
 
-void UARTFrontView717::dataExchangeInputs()
+void UARTFrontView717::DataExchangeInputs()
 {
 	EnterCriticalSection(&m_CriticalSection);
 
@@ -1287,13 +1267,13 @@ void UARTFrontView717::dataExchangeInputs()
 	inTable["AV3"].val = m_Signals.arrInput[187];
 	//inTable["UPPS_On"].val = m_Signals.arrInput[188]; // TODO
 
-	inTable["EmergencyBrakeValve"].val = !adcStopcrane(m_Signals.arrADC[0]);
-	inTable["CranePosition"].val = adcKM013(m_Signals.arrADC[1]) * 1000;
+	inTable["EmergencyBrakeValve"].val = !ADCStopcrane(m_Signals.arrADC[0]);
+	inTable["CranePosition"].val = ADCKM013(m_Signals.arrADC[1]) * 1000;
 
 	LeaveCriticalSection(&m_CriticalSection);
 }
 
-void UARTFrontView717::dataExchangeOutputs()
+void UARTFrontView717::DataExchangeOutputs()
 {
 	EnterCriticalSection(&m_CriticalSection);
 
@@ -1340,12 +1320,12 @@ void UARTFrontView717::dataExchangeOutputs()
 	m_Signals.arrOutput[287] = outTable["IGLA:Fire"].val;
 
 	// Стрелочная индикация
-	m_Signals.arrArrow[0] = stepTC(m_NW2VarTableOutput.GetPackedRatio("BCPressure"));
-	m_Signals.arrArrow[1] = stepNM(m_NW2VarTableOutput.GetPackedRatio("TLPressure"));
-	m_Signals.arrArrow[2] = stepTM(m_NW2VarTableOutput.GetPackedRatio("BLPressure"));
-	m_Signals.arrArrow[3] = stepAmmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesCurrent"));
-	m_Signals.arrArrow[4] = stepKiloVoltmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesVoltage"));
-	m_Signals.arrArrow[5] = stepBattVoltmeter(m_NW2VarTableOutput.GetPackedRatio("BatteryVoltage"));
+	m_Signals.arrArrow[0] = StepTC(m_NW2VarTableOutput.GetPackedRatio("BCPressure"));
+	m_Signals.arrArrow[1] = StepNM(m_NW2VarTableOutput.GetPackedRatio("TLPressure"));
+	m_Signals.arrArrow[2] = StepTM(m_NW2VarTableOutput.GetPackedRatio("BLPressure"));
+	m_Signals.arrArrow[3] = StepAmmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesCurrent"));
+	m_Signals.arrArrow[4] = StepKiloVoltmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesVoltage"));
+	m_Signals.arrArrow[5] = StepBattVoltmeter(m_NW2VarTableOutput.GetPackedRatio("BatteryVoltage"));
 
 	// Скоростемер
 	m_Signals.arr7SegDec[0] = outTable["LUDS"].val ? int(m_NW2VarTableOutput.GetPackedRatio("Speed") * 100.0f) : -1;
@@ -1370,11 +1350,10 @@ void UARTFrontView717::dataExchangeOutputs()
 	LeaveCriticalSection(&m_CriticalSection);
 }
 
-void UARTFrontView717::destroyHandle()
+void UARTFrontView717::DestroyHandle()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	PRINT_MSG_DBG("Destroy handle\n");
 
 	if (m_hPort != INVALID_HANDLE_VALUE)
@@ -1386,7 +1365,7 @@ void UARTFrontView717::destroyHandle()
 	m_hPort = INVALID_HANDLE_VALUE;
 }
 
-bool UARTFrontView717::createCalibrationsFile()
+bool UARTFrontView717::CreateCalibrationsFile()
 {
 	auto hFile = CreateFile(CALIBRATIONS_FILE, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hFile == INVALID_HANDLE_VALUE)
@@ -1396,7 +1375,7 @@ bool UARTFrontView717::createCalibrationsFile()
 	return true;
 }
 
-bool UARTFrontView717::adcStopcrane(int adc)
+bool UARTFrontView717::ADCStopcrane(int adc)
 {
 	bool retVal = false;
 
@@ -1411,7 +1390,7 @@ bool UARTFrontView717::adcStopcrane(int adc)
 	return retVal;
 }
 
-int UARTFrontView717::adcKM013(int adc)
+int UARTFrontView717::ADCKM013(int adc)
 {
 	int retVal = 7;
 
@@ -1441,7 +1420,7 @@ int UARTFrontView717::adcKM013(int adc)
 	return retVal;
 }
 
-int UARTFrontView717::stepTC(float value)
+int UARTFrontView717::StepTC(float value)
 {
 	int m_Min = m_TCCalib.m_Min;
 	int m_Max = m_TCCalib.m_Max;
@@ -1455,7 +1434,7 @@ int UARTFrontView717::stepTC(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::stepNM(float value)
+int UARTFrontView717::StepNM(float value)
 {
 	int m_Min = m_NMCalib.m_Min;
 	int m_Max = m_NMCalib.m_Max;
@@ -1469,7 +1448,7 @@ int UARTFrontView717::stepNM(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::stepTM(float value)
+int UARTFrontView717::StepTM(float value)
 {
 	int m_Min = m_TMCalib.m_Min;
 	int m_Max = m_TMCalib.m_Max;
@@ -1483,7 +1462,7 @@ int UARTFrontView717::stepTM(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::stepKiloVoltmeter(float value)
+int UARTFrontView717::StepKiloVoltmeter(float value)
 {
 	int m_Min = m_KiloVoltmeterCalib.m_Min;
 	int m_Max = m_KiloVoltmeterCalib.m_Max;
@@ -1497,7 +1476,7 @@ int UARTFrontView717::stepKiloVoltmeter(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::stepAmmeter(float value)
+int UARTFrontView717::StepAmmeter(float value)
 {
 	int m_Min = m_AmmeterCalib.m_Min;
 	int m_Max = m_AmmeterCalib.m_Max;
@@ -1511,7 +1490,7 @@ int UARTFrontView717::stepAmmeter(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::stepBattVoltmeter(float value)
+int UARTFrontView717::StepBattVoltmeter(float value)
 {
 	int m_Min = m_BattVoltmeterCalib.m_Min;
 	int m_Max = m_BattVoltmeterCalib.m_Max;
@@ -1525,7 +1504,7 @@ int UARTFrontView717::stepBattVoltmeter(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-void UARTFrontView717::readSleepTimes()
+void UARTFrontView717::ReadSleepTimes()
 {
 	m_sleepTimes.afterRead = GetPrivateProfileInt("Sleep", "AfterRead", 5, SLEEPTIMINGS_FILE);
 	m_sleepTimes.afterWriteSignals = GetPrivateProfileInt("Sleep", "AfterWriteSignals", 25, SLEEPTIMINGS_FILE);
@@ -1533,20 +1512,18 @@ void UARTFrontView717::readSleepTimes()
 	m_sleepTimes.afterAll = GetPrivateProfileInt("Sleep", "AfterAll", 30, SLEEPTIMINGS_FILE);
 }
 
-void UARTFrontView717::readStopcraneCalibrations()
+void UARTFrontView717::ReadStopcraneCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_StopcraneCalib.m_Off = GetPrivateProfileInt("Stopcrane", "Off", 0, CALIBRATIONS_FILE);
 	m_StopcraneCalib.m_On = GetPrivateProfileInt("Stopcrane", "On", 1, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readKM013Calibrations()
+void UARTFrontView717::ReadKM013Calibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_KM013Calib.m_Pos1 = GetPrivateProfileInt("KM013", "Pos1", 0, CALIBRATIONS_FILE);
 	m_KM013Calib.m_Pos2 = GetPrivateProfileInt("KM013", "Pos2", 1, CALIBRATIONS_FILE);
 	m_KM013Calib.m_Pos3 = GetPrivateProfileInt("KM013", "Pos3", 2, CALIBRATIONS_FILE);
@@ -1556,62 +1533,56 @@ void UARTFrontView717::readKM013Calibrations()
 	m_KM013Calib.m_Pos7 = GetPrivateProfileInt("KM013", "Pos7", 6, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readTCCalibrations()
+void UARTFrontView717::ReadTCCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_TCCalib.m_Min = GetPrivateProfileInt("TC", "Min", 0, CALIBRATIONS_FILE);
 	m_TCCalib.m_Max = GetPrivateProfileInt("TC", "Max", 6, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readNMCalibrations()
+void UARTFrontView717::ReadNMCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_NMCalib.m_Min = GetPrivateProfileInt("NM", "Min", 0, CALIBRATIONS_FILE);
 	m_NMCalib.m_Max = GetPrivateProfileInt("NM", "Max", 16, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readTMCalibrations()
+void UARTFrontView717::ReadTMCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_TMCalib.m_Min = GetPrivateProfileInt("TM", "Min", 0, CALIBRATIONS_FILE);
 	m_TMCalib.m_Max = GetPrivateProfileInt("TM", "Max", 16, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readKiloVoltmeterCalibrations()
+void UARTFrontView717::ReadKiloVoltmeterCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_KiloVoltmeterCalib.m_Min = GetPrivateProfileInt("KiloVoltmeter", "Min", 0, CALIBRATIONS_FILE);
 	m_KiloVoltmeterCalib.m_Max = GetPrivateProfileInt("KiloVoltmeter", "Max", 1000, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readAmmeterCalibrations()
+void UARTFrontView717::ReadAmmeterCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_AmmeterCalib.m_Min = GetPrivateProfileInt("Ammeter", "Min", 0, CALIBRATIONS_FILE);
 	m_AmmeterCalib.m_Max = GetPrivateProfileInt("Ammeter", "Max", 1000, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::readBattVoltmerCalibrations()
+void UARTFrontView717::ReadBattVoltmerCalibrations()
 {
-#ifdef SHOW_CONSOLE
-	printf("%s\n", __FUNCSIG__);
-#endif
+	PRINT_FUNCSIG;
+
 	m_BattVoltmeterCalib.m_Min = GetPrivateProfileInt("BattVoltmeter", "Min", 0, CALIBRATIONS_FILE);
 	m_BattVoltmeterCalib.m_Max = GetPrivateProfileInt("BattVoltmeter", "Max", 150, CALIBRATIONS_FILE);
 }
 
 static byte byte7DecSeg[] = { 0x00,0x08,0x01,0x09,0x02,0x0A,0x03,0x0B,0x04,0x0C };
-byte UARTFrontView717::convertIntTo7DecSegByte(int number)
+byte UARTFrontView717::ConvertIntTo7DecSegByte(int number)
 {
 	if (number == -1)
 		return 0xFF;

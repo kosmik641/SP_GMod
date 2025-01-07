@@ -5,6 +5,7 @@
 #define UNIVCON_VERSION 32 // 32 for v3.2, 37 for v3.7
 #define CALIBRATIONS_FILE ".\\uart_config\\calibrations.ini"
 #define SLEEPTIMINGS_FILE ".\\uart_config\\sleep.ini"
+#define CONFIG_FILE ".\\uart_config\\configuration.ini"
 #define TRAIN_CLASSNAME "gmod_subway_81-717_mvm"
 #define MSG_COLOR Color(200, 255, 100, 255)
 #define MSG_COLOR_NORMAL Color(255, 255, 255, 255)

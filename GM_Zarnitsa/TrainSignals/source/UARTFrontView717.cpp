@@ -69,7 +69,7 @@ int UARTFrontView717::Start(int port,int version)
 	}
 
 	// Загрузка конфигураций
-	SetupConfig();
+	LoadConfig();
 	LoadSleepTimings();
 	LoadCalibartions();
 
@@ -186,492 +186,73 @@ CRITICAL_SECTION* UARTFrontView717::GetCriticalSection()
 	return &m_CriticalSection;
 }
 
-void UARTFrontView717::SetupConfig()
+void UARTFrontView717::LoadConfig()
 {
 	PRINT_FUNCSIG;
 
-	// Количество контроллеров
-	int nControllers = 14;
-
 	CUnivCon::Configuration& config = m_UnivConv->m_Config;
+
+	// Количество контроллеров
+	byte nControllers = GetPrivateProfileIntA("Configuration", "NumberOfControllers", 0, CONFIG_FILE) % 256;
 	config.nControllers = nControllers;
+	if (nControllers == 0)
+		return;
+
+	static char ini_key[64]{};
+	static char ini_value[64]{};
 
 	// Количество стрелочных приборов на контроллер
+	int nArrows = 0;
 	config.arrArrows.reset(new int[nControllers]());
-	config.arrArrows[2] = 3;
-	config.arrArrows[3] = 3;
+	for (int i = 0; i < nControllers; i++)
+	{
+		wsprintf(ini_key, "Cntr%d", i);
+		config.arrArrows[i] = GetPrivateProfileIntA("Arrows", ini_key, 0, CONFIG_FILE);
+		nArrows += config.arrArrows[i];
+	}
 
 	// Массив конфигурации 7-ми сегментного индикатора скорости для метро (через дешифратор К514ИД2)
+	int n7SegDec = 0;
 	config.arr7SegDec.reset(new CUnivCon::SevenDecSignals[nControllers]());
-	config.arr7SegDec[8].port[0] = 1;
+	for (int i = 0; i < nControllers; i++)
+	{
+		for (int p = 0; p < 3; p++)
+		{
+			wsprintf(ini_key, "Cntr%dPort%d", i, p);
+			config.arr7SegDec[i].port[p] = GetPrivateProfileIntA("7SegDec", ini_key, 0, CONFIG_FILE) > 0;
+			n7SegDec += config.arr7SegDec[i].port[p];
+		}
+	}
 
 	// Массив конфигурации текстовых дисплеев. Число, отличное от нуля, обозначает кол-во символов в одной строке дисплея.
+	int nTextDisplays = 0;
 	config.arrTextDisplaySize.reset(new int[nControllers]());
-	config.arrTextDisplaySize[12] = 20;
-	config.arrTextDisplaySize[13] = 24;
+	for (int i = 0; i < nControllers; i++)
+	{
+		wsprintf(ini_key, "Cntr%d", i);
+		config.arrTextDisplaySize[i] = GetPrivateProfileIntA("TextDisplay", ini_key, 0, CONFIG_FILE);
+		nTextDisplays += (config.arrTextDisplaySize[i] > 0);
+	}
+
+	// Количество ADC на контроллер
+	int nADC = 0;
+	config.arrADCPerController.reset(new int[nControllers]());
 
 	// Главный конфигурационный массив
 	int nPins = 24 * nControllers;
 	config.arrPins.reset(new int[nPins]());
-
-	// 1.1
-	config.arrPins[0] = CUnivCon::NotUsed; // 
-	config.arrPins[1] = CUnivCon::NotUsed; // 
-	config.arrPins[2] = CUnivCon::NotUsed; // 
-	config.arrPins[3] = CUnivCon::NotUsed; // 
-	config.arrPins[4] = CUnivCon::NotUsed; // 
-	config.arrPins[5] = CUnivCon::NotUsed; // 
-	config.arrPins[6] = CUnivCon::NotUsed; // 
-	config.arrPins[7] = CUnivCon::InputADC; // Стопкран
-
-	// 1.2
-	config.arrPins[8] = CUnivCon::Input; // УНЧ     
-	config.arrPins[9] = CUnivCon::Input; // Контроль ЭС
-	config.arrPins[10] = CUnivCon::Input; // Контр громког
-	config.arrPins[11] = CUnivCon::Input; // Радио
-	config.arrPins[12] = CUnivCon::Input; // Программа 2
-	config.arrPins[13] = CUnivCon::Input; // Программа 1
-	config.arrPins[14] = CUnivCon::Input; // Закрытие дверей
-	config.arrPins[15] = CUnivCon::Input; // ВПР
-
-	// 1.3
-	config.arrPins[16] = CUnivCon::Input; // Вкл. мотор компрессора
-	config.arrPins[17] = CUnivCon::Input; // БПСН
-	config.arrPins[18] = CUnivCon::Input; // Аварийное освещение
-	config.arrPins[19] = CUnivCon::Input; // Компрессор резервный
-	config.arrPins[20] = CUnivCon::Input; // АРС 13V
-	config.arrPins[21] = CUnivCon::Input; // АСНП: Вверх
-	config.arrPins[22] = CUnivCon::Input; // АСНП: Вниз
-	config.arrPins[23] = CUnivCon::Input; // АСНП: Меню
-
-	// 2.1
-    config.arrPins[24] = CUnivCon::InputADC; // КМ-013
-	config.arrPins[25] = CUnivCon::Input; // КВ-70: 10-8
-	config.arrPins[26] = CUnivCon::Input; // КВ-70: Реверс вкл
-	config.arrPins[27] = CUnivCon::Input; // КВ-70: Выбег
-	config.arrPins[28] = CUnivCon::Input; // КВ-70: Реверс назад
-	config.arrPins[29] = CUnivCon::Input; // КВ-70: У2-2
-	config.arrPins[30] = CUnivCon::Input; // КВ-70: У2-20Б
-	config.arrPins[31] = CUnivCon::Input; // КВ-70: У2-3
-
-	// 2.2
-	config.arrPins[32] = CUnivCon::Input; // АРС
-	config.arrPins[33] = CUnivCon::Input; // АЛС
-	config.arrPins[34] = CUnivCon::Input; // АРС-Р
-	config.arrPins[35] = CUnivCon::Input; // Дешифратор
-	config.arrPins[36] = CUnivCon::Input; // Осв. салона
-	config.arrPins[37] = CUnivCon::Input; // Осв. кабины
-	config.arrPins[38] = CUnivCon::Input; // Осв. пульта
-	config.arrPins[39] = CUnivCon::Input; // Вспомогательный поезд
-
-	// 2.3
-	config.arrPins[40] = CUnivCon::Input; // Рез. закрытие дверей
-	config.arrPins[41] = CUnivCon::Input; // Вкл. БВ
-	config.arrPins[42] = CUnivCon::Input; // Двери левые (правая)
-	config.arrPins[43] = CUnivCon::Input; // Двери левые (левая)
-	config.arrPins[44] = CUnivCon::Input; // Выбор дверей (левые-0, правые-1)
-	config.arrPins[45] = CUnivCon::Input; // Бдительность (левая)
-	config.arrPins[46] = CUnivCon::Input; // Бдительность (правая)
-	config.arrPins[47] = CUnivCon::Input; // АВУ
-
-	// 3.1
-	config.arrPins[48] = CUnivCon::Input; // Двери торцевые (1 гр.)
-	config.arrPins[49] = CUnivCon::Input; // Вентиляция кабины
-	config.arrPins[50] = CUnivCon::Input; // Вкл. авар. сигн. (2 гр.)
-	config.arrPins[51] = CUnivCon::Input; // Защита преобразователя
-	config.arrPins[52] = CUnivCon::Input; // Сигнализация
-	config.arrPins[53] = CUnivCon::Input; // Звонок
-	config.arrPins[54] = CUnivCon::Input; // Откл БВ
-	config.arrPins[55] = CUnivCon::Input; // Вентиль №1
-
-	// 3.2
-	config.arrPins[56] = CUnivCon::Input; // Пуск резервный
-	config.arrPins[57] = CUnivCon::Input; // Аварийный ход
-	config.arrPins[58] = CUnivCon::Input; // Фары
-	config.arrPins[59] = CUnivCon::Input; // ВУС
-	config.arrPins[60] = CUnivCon::Input; // Авариные двери (тумблер)
-	config.arrPins[61] = CUnivCon::Input; // Аварийный ход (тумблер)
-	config.arrPins[62] = CUnivCon::Input; // ВКСТ
-	config.arrPins[63] = CUnivCon::Input; // Двери прав
-
-	// 3.3
-	config.arrPins[64] = CUnivCon::Input; // КРУ1
-	config.arrPins[65] = CUnivCon::Input; // КРУ2
-	config.arrPins[66] = CUnivCon::NotUsed; // 
-	config.arrPins[67] = CUnivCon::Input; // АСОТП: Кнопка 1
-	config.arrPins[68] = CUnivCon::Input; // АСОТП: Кнопка 2
-	config.arrPins[69] = CUnivCon::Input; // АСОТП: Кнопка 3
-	config.arrPins[70] = CUnivCon::Input; // АСОТП: Кнопка 4
-	config.arrPins[71] = CUnivCon::NotUsed; // 
-
-	// 4.1
-	config.arrPins[72] = CUnivCon::Input; // Помощник: Закрытие дверей
-	config.arrPins[73] = CUnivCon::Input; // Помощник: Левые двери
-	config.arrPins[74] = CUnivCon::Input; // Помощник: Программа 1
-	config.arrPins[75] = CUnivCon::Input; // Помощник: Программа 2
-	config.arrPins[76] = CUnivCon::Input; // Педаль бдительности
-	config.arrPins[77] = CUnivCon::Input; // Пневмосигнал
-	config.arrPins[78] = CUnivCon::NotUsed; // 
-	config.arrPins[79] = CUnivCon::NotUsed; // 
-
-	// 4.2
-	config.arrPins[80] = CUnivCon::NotUsed; // 
-	config.arrPins[81] = CUnivCon::NotUsed; // 
-	config.arrPins[82] = CUnivCon::NotUsed; // 
-	config.arrPins[83] = CUnivCon::NotUsed; // 
-	config.arrPins[84] = CUnivCon::Input; // Управление (предохранитель)
-	config.arrPins[85] = CUnivCon::Input; // Батарея (предохранитель)
-	config.arrPins[86] = CUnivCon::Input; // Без подписи (предохранитель)
-	config.arrPins[87] = CUnivCon::Input; // Преобразователь (предохранитель)
-
-	// 4.3
-	config.arrPins[88] = CUnivCon::Input; // Освещение1 (предохранитель)
-	config.arrPins[89] = CUnivCon::Input; // Освещение2 (предохранитель)
-	config.arrPins[90] = CUnivCon::Input; // УАВА
-	config.arrPins[91] = CUnivCon::NotUsed; // 
-	config.arrPins[92] = CUnivCon::NotUsed; // 
-	config.arrPins[93] = CUnivCon::NotUsed; // 
-	config.arrPins[94] = CUnivCon::NotUsed; // 
-	config.arrPins[95] = CUnivCon::NotUsed; // 
-
-	// 5.1
-	config.arrPins[96] = CUnivCon::Input; // РЦ1
-	config.arrPins[97] = CUnivCon::Input; // Батареи
-	config.arrPins[98] = CUnivCon::Input; // УОС
-	config.arrPins[99] = CUnivCon::Input; // Втр прижат
-	config.arrPins[100] = CUnivCon::Input; // Весь состав
-	config.arrPins[101] = CUnivCon::Input; // 1 половина
-	config.arrPins[102] = CUnivCon::Input; // 2 половина
-	config.arrPins[103] = CUnivCon::NotUsed; // 
-
-	// 5.2
-	config.arrPins[104] = CUnivCon::Input; // Разобщ кран кран машиниста
-	config.arrPins[105] = CUnivCon::Input; // Стояночный тормоз
-	config.arrPins[106] = CUnivCon::Input; // ЭПВ-АРС
-	config.arrPins[107] = CUnivCon::NotUsed; // 
-	config.arrPins[108] = CUnivCon::NotUsed; // 
-	config.arrPins[109] = CUnivCon::NotUsed; // 
-	config.arrPins[110] = CUnivCon::NotUsed; // 
-	config.arrPins[111] = CUnivCon::NotUsed; // 
-
-	// 5.3
-	config.arrPins[112] = CUnivCon::Input; // A54-in
-	config.arrPins[113] = CUnivCon::Input; // ВУ-in
-	config.arrPins[114] = CUnivCon::Input; // A10-in
-	config.arrPins[115] = CUnivCon::Input; // A53-in
-	config.arrPins[116] = CUnivCon::Input; // A49-in
-	config.arrPins[117] = CUnivCon::Input; // A27-in
-	config.arrPins[118] = CUnivCon::Input; // AC1-in
-	config.arrPins[119] = CUnivCon::Input; // A21-in
-
-	// 6.1
-	config.arrPins[120] = CUnivCon::Input; // A26-in
-	config.arrPins[121] = CUnivCon::Input; // AP63-in
-	config.arrPins[122] = CUnivCon::Input; // A17-in
-	config.arrPins[123] = CUnivCon::Input; // A44-in
-	config.arrPins[124] = CUnivCon::Input; // A45-in
-	config.arrPins[125] = CUnivCon::Input; // A11-in
-	config.arrPins[126] = CUnivCon::Input; // A71-in
-	config.arrPins[127] = CUnivCon::Input; // A41-in
-
-	// 6.2
-	config.arrPins[128] = CUnivCon::Input; // A74-in
-	config.arrPins[129] = CUnivCon::Input; // A73-in
-	config.arrPins[130] = CUnivCon::Input; // A79-in
-	config.arrPins[131] = CUnivCon::Input; // A42-in
-	config.arrPins[132] = CUnivCon::Input; // A46-in
-	config.arrPins[133] = CUnivCon::Input; // A47-in
-	config.arrPins[134] = CUnivCon::Input; // AB1-in
-	config.arrPins[135] = CUnivCon::Input; // A29-in
-
-	// 6.3
-	config.arrPins[136] = CUnivCon::Input; // A76-in
-	config.arrPins[137] = CUnivCon::Input; // A48-in
-	config.arrPins[138] = CUnivCon::Input; // A56-in
-	config.arrPins[139] = CUnivCon::Input; // A65-in
-	config.arrPins[140] = CUnivCon::Input; // A25-in
-	config.arrPins[141] = CUnivCon::Input; // A30-in
-	config.arrPins[142] = CUnivCon::Input; // A1-in
-	config.arrPins[143] = CUnivCon::Input; // A20-in
-
-	// 7.1
-	config.arrPins[144] = CUnivCon::Input; // A32-in
-	config.arrPins[145] = CUnivCon::Input; // A13-in
-	config.arrPins[146] = CUnivCon::Input; // A43-in
-	config.arrPins[147] = CUnivCon::Input; // A31-in
-	config.arrPins[148] = CUnivCon::Input; // A77-in
-	config.arrPins[149] = CUnivCon::Input; // A78-in
-	config.arrPins[150] = CUnivCon::Input; // ВБД
-	config.arrPins[151] = CUnivCon::Input; // A75-in
-	
-	// 7.2
-	config.arrPins[152] = CUnivCon::Input; // A22-in
-	config.arrPins[153] = CUnivCon::Input; // A8-in
-	config.arrPins[154] = CUnivCon::Input; // A28-in
-	config.arrPins[155] = CUnivCon::Input; // A38-in
-	config.arrPins[156] = CUnivCon::Input; // A14-in
-	config.arrPins[157] = CUnivCon::Input; // A39-in
-	config.arrPins[158] = CUnivCon::Input; // A6-in
-	config.arrPins[159] = CUnivCon::Input; // A70-in
-	
-	// 7.3
-	config.arrPins[160] = CUnivCon::Input; // A4-in
-	config.arrPins[161] = CUnivCon::Input; // A5-in
-	config.arrPins[162] = CUnivCon::Input; // A2-in
-	config.arrPins[163] = CUnivCon::Input; // A3-in
-	config.arrPins[164] = CUnivCon::Input; // A50-in
-	config.arrPins[165] = CUnivCon::Input; // A52-in
-	config.arrPins[166] = CUnivCon::Input; // A40-in
-	config.arrPins[167] = CUnivCon::Input; // A80-in
-	
-
-	// 8.1
-	config.arrPins[168] = CUnivCon::Input; // A66-in
-	config.arrPins[169] = CUnivCon::Input; // A18-in
-	config.arrPins[170] = CUnivCon::Input; // A24-in
-	config.arrPins[171] = CUnivCon::Input; // A19-in
-	config.arrPins[172] = CUnivCon::Input; // A37-in
-	config.arrPins[173] = CUnivCon::Input; // A51-in
-	config.arrPins[174] = CUnivCon::Input; // A12-in
-	config.arrPins[175] = CUnivCon::Input; // A16-in
-	
-	// 8.2	
-	config.arrPins[176] = CUnivCon::Input; // A68-in
-	config.arrPins[177] = CUnivCon::Input; // A72-in
-	config.arrPins[178] = CUnivCon::Input; // A7-in
-	config.arrPins[179] = CUnivCon::Input; // A9-in
-	config.arrPins[180] = CUnivCon::Input; // A57-in
-	config.arrPins[181] = CUnivCon::Input; // A81-in
-	config.arrPins[182] = CUnivCon::Input; // A82-in
-	config.arrPins[183] = CUnivCon::Input; // A15-in
-	
-	// 8.3
-	config.arrPins[184] = CUnivCon::Input; // AB6-in
-	config.arrPins[185] = CUnivCon::Input; // A83-in
-	config.arrPins[186] = CUnivCon::Input; // A33-in (АИС)
-	config.arrPins[187] = CUnivCon::Input; // AB3-in
-	config.arrPins[188] = CUnivCon::NotUsed; // TODO: УППС
-	config.arrPins[189] = CUnivCon::NotUsed; //
-	config.arrPins[190] = CUnivCon::NotUsed; // 
-	config.arrPins[191] = CUnivCon::NotUsed; // 
-	
-	// 9.1
-	config.arrPins[192] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[193] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[194] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[195] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[196] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[197] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[198] = CUnivCon::Output; // Индикатор скорости
-	config.arrPins[199] = CUnivCon::Output; // Индикатор скорости
-	
-	// 9.2
-	config.arrPins[200] = CUnivCon::Output; // ОЧ
-	config.arrPins[201] = CUnivCon::Output; // 0
-	config.arrPins[202] = CUnivCon::Output; // 40
-	config.arrPins[203] = CUnivCon::Output; // 60
-	config.arrPins[204] = CUnivCon::Output; // 70
-	config.arrPins[205] = CUnivCon::Output; // 80
-	config.arrPins[206] = CUnivCon::Output; // ЛСД
-	config.arrPins[207] = CUnivCon::NotUsed; // 
-	
-	// 9.3
-	config.arrPins[208] = CUnivCon::Output; // ЛХ"РК"
-	config.arrPins[209] = CUnivCon::Output; // РП
-	config.arrPins[210] = CUnivCon::Output; // ЛСН
-	config.arrPins[211] = CUnivCon::Output; // ЛЭКК
-	config.arrPins[212] = CUnivCon::Output; // ЛКВЦ
-	config.arrPins[213] = CUnivCon::Output; // ЛН
-	config.arrPins[214] = CUnivCon::Output; // РС
-	config.arrPins[215] = CUnivCon::Output; // ЛКВД
-	
-	// 10.1
-	config.arrPins[216] = CUnivCon::NotUsed; // 
-	config.arrPins[217] = CUnivCon::NotUsed; // 
-	config.arrPins[218] = CUnivCon::NotUsed; // 
-	config.arrPins[219] = CUnivCon::Output; // ЛВД
-	config.arrPins[220] = CUnivCon::Output; // ЛКТ
-	config.arrPins[221] = CUnivCon::Output; // ЛСТ
-	config.arrPins[222] = CUnivCon::NotUsed; // 
-	config.arrPins[223] = CUnivCon::NotUsed; // 
-	
-	// 10.2
-	config.arrPins[224] = CUnivCon::NotUsed; // 
-	config.arrPins[225] = CUnivCon::NotUsed; // 
-	config.arrPins[226] = CUnivCon::NotUsed; // 
-	config.arrPins[227] = CUnivCon::Output; // Двери левые (левая) светодиод
-	config.arrPins[228] = CUnivCon::Output; // Двери левые (правая) светодиод
-	config.arrPins[229] = CUnivCon::Output; // РП светодиод
-	config.arrPins[230] = CUnivCon::Output; // Защита преобраз. светодиод
-	config.arrPins[231] = CUnivCon::Output; // Лампа контроля невключения вентиляции
-	
-	// 10.3
-	config.arrPins[232] = CUnivCon::Output; // ЛСП
-	config.arrPins[233] = CUnivCon::Output; // АВУ
-	config.arrPins[234] = CUnivCon::Output; // ЛКВП
-	config.arrPins[235] = CUnivCon::Output; // Пневмотормоз
-	config.arrPins[236] = CUnivCon::Output; // ИСТ
-	config.arrPins[237] = CUnivCon::Output; // Двери правые
-	config.arrPins[238] = CUnivCon::NotUsed; // 
-	config.arrPins[239] = CUnivCon::NotUsed; // 
-	
-	// 11.1
-	config.arrPins[240] = CUnivCon::Output; // ВУ-o
-	config.arrPins[241] = CUnivCon::Output; // A54-o
-	config.arrPins[242] = CUnivCon::Output; // A53-o
-	config.arrPins[243] = CUnivCon::Output; // A10-o
-	config.arrPins[244] = CUnivCon::Output; // A27-o
-	config.arrPins[245] = CUnivCon::Output; // A49-o
-	config.arrPins[246] = CUnivCon::Output; // A21-o
-	config.arrPins[247] = CUnivCon::Output; // AC-1-o
-	
-	// 11.2
-	config.arrPins[248] = CUnivCon::Output; // AP63-o
-	config.arrPins[249] = CUnivCon::Output; // A26-o
-	config.arrPins[250] = CUnivCon::Output; // A44-o
-	config.arrPins[251] = CUnivCon::Output; // A17-o
-	config.arrPins[252] = CUnivCon::Output; // A11-o
-	config.arrPins[253] = CUnivCon::Output; // A45-o
-	config.arrPins[254] = CUnivCon::Output; // A41-o
-	config.arrPins[255] = CUnivCon::Output; // A71-o
-	
-	// 11.3
-	config.arrPins[256] = CUnivCon::Output; // A73-o
-	config.arrPins[257] = CUnivCon::Output; // A74-o
-	config.arrPins[258] = CUnivCon::Output; // A42-o
-	config.arrPins[259] = CUnivCon::Output; // A79-o
-	config.arrPins[260] = CUnivCon::Output; // A47-o
-	config.arrPins[261] = CUnivCon::Output; // A46-o
-	config.arrPins[262] = CUnivCon::Output; // A29-o
-	config.arrPins[263] = CUnivCon::Output; // AB1-o
-	
-	// 12.1
-	config.arrPins[264] = CUnivCon::Output; // A48-o
-	config.arrPins[265] = CUnivCon::Output; // A76-o
-	config.arrPins[266] = CUnivCon::Output; // A65-o
-	config.arrPins[267] = CUnivCon::Output; // A56-o
-	config.arrPins[268] = CUnivCon::Output; // A30-o
-	config.arrPins[269] = CUnivCon::Output; // A25-o
-	config.arrPins[270] = CUnivCon::Output; // A20-o
-	config.arrPins[271] = CUnivCon::Output; // A1-o
-	
-	// 12.2
-	config.arrPins[272] = CUnivCon::Output; // A13-o
-	config.arrPins[273] = CUnivCon::Output; // A32-o
-	config.arrPins[274] = CUnivCon::Output; // A31-o
-	config.arrPins[275] = CUnivCon::Output; // A43-o
-	config.arrPins[276] = CUnivCon::Output; // A78-o
-	config.arrPins[277] = CUnivCon::Output; // A77-o
-	config.arrPins[278] = CUnivCon::Output; // A75-o
-	config.arrPins[279] = CUnivCon::NotUsed; // 
-	
-	// 12.3
-	config.arrPins[280] = CUnivCon::NotUsed; // 
-	config.arrPins[281] = CUnivCon::NotUsed; // 
-	config.arrPins[282] = CUnivCon::Output; // АСОТП: LED 4
-	config.arrPins[283] = CUnivCon::Output; // АСОТП: LED 3
-	config.arrPins[284] = CUnivCon::Output; // АСОТП: LED 2
-	config.arrPins[285] = CUnivCon::Output; // АСОТП: LED 1
-	config.arrPins[286] = CUnivCon::Output; // АСОТП: НЕИСПР.
-	config.arrPins[287] = CUnivCon::Output; // АСОТП: ПОЖАР !
-	
-	// 13.1
-	config.arrPins[288] = CUnivCon::Output; // A8-o
-	config.arrPins[289] = CUnivCon::Output; // A22-o
-	config.arrPins[290] = CUnivCon::Output; // A38-o
-	config.arrPins[291] = CUnivCon::Output; // A28-o
-	config.arrPins[292] = CUnivCon::Output; // A39-o
-	config.arrPins[293] = CUnivCon::Output; // A14-o
-	config.arrPins[294] = CUnivCon::Output; // A70-o
-	config.arrPins[295] = CUnivCon::Output; // A6-o
-	
-	// 13.2
-	config.arrPins[296] = CUnivCon::Output; // A5-o
-	config.arrPins[297] = CUnivCon::Output; // A4-o
-	config.arrPins[298] = CUnivCon::Output; // A3-o
-	config.arrPins[299] = CUnivCon::Output; // A2-o
-	config.arrPins[300] = CUnivCon::Output; // A52-o
-	config.arrPins[301] = CUnivCon::Output; // A50-o
-	config.arrPins[302] = CUnivCon::Output; // A80-o
-	config.arrPins[303] = CUnivCon::Output; // A40-o
-	
-	// 13.3
-	config.arrPins[304] = CUnivCon::Output; // A18-o
-	config.arrPins[305] = CUnivCon::Output; // A66-o
-	config.arrPins[306] = CUnivCon::Output; // A19-o
-	config.arrPins[307] = CUnivCon::Output; // A24-o
-	config.arrPins[308] = CUnivCon::Output; // A51-o
-	config.arrPins[309] = CUnivCon::Output; // A37-o
-	config.arrPins[310] = CUnivCon::Output; // A16-o
-	config.arrPins[311] = CUnivCon::Output; // A12-o
-	
-	// 14.1
-	config.arrPins[312] = CUnivCon::Output; // A72-o
-	config.arrPins[313] = CUnivCon::Output; // A68-o
-	config.arrPins[314] = CUnivCon::Output; // A9-o
-	config.arrPins[315] = CUnivCon::Output; // A7-o
-	config.arrPins[316] = CUnivCon::Output; // A81-o
-	config.arrPins[317] = CUnivCon::Output; // A57-o
-	config.arrPins[318] = CUnivCon::Output; // A15-o
-	config.arrPins[319] = CUnivCon::Output; // A82-o
-	
-	// 14.2
-	config.arrPins[320] = CUnivCon::Output; // A83-o
-	config.arrPins[321] = CUnivCon::Output; // AB6-o
-	config.arrPins[322] = CUnivCon::Output; // AB3-o
-	config.arrPins[323] = CUnivCon::Output; // A33-o
-	config.arrPins[324] = CUnivCon::NotUsed; // 
-	config.arrPins[325] = CUnivCon::NotUsed; // 
-	config.arrPins[326] = CUnivCon::NotUsed; // 
-	config.arrPins[327] = CUnivCon::NotUsed; // 
-	
-	// 14.3
-	config.arrPins[328] = CUnivCon::Output; // Клапан 1
-	config.arrPins[329] = CUnivCon::Output; // Клапан 2
-	config.arrPins[330] = CUnivCon::NotUsed; // 
-	config.arrPins[331] = CUnivCon::Output; // Клапан 3
-	config.arrPins[332] = CUnivCon::NotUsed; // 
-	config.arrPins[333] = CUnivCon::NotUsed; // 
-	config.arrPins[334] = CUnivCon::NotUsed; // 
-	config.arrPins[335] = CUnivCon::NotUsed; // 
-	
-	// Считаем размеры массивов
-	// Количество ADC
-	config.arrADCPerController.reset(new int[nControllers]());
-	int nADC = 0;
 	for (int i = 0; i < nPins; i++)
 	{
+		wsprintfA(ini_key, "Pin%d", i);
+		GetPrivateProfileStringA("Pins", ini_key, "NotUsed", ini_value, sizeof(ini_value), CONFIG_FILE);
+		config.arrPins[i] = ParseConfig(ini_key, ini_value);
+
 		int i_Controller = i / 24;
 		if (config.arrPins[i] == CUnivCon::InputADC)
 		{
 			nADC++;
 			config.arrADCPerController[i_Controller]++;
 		}
-	}
-
-	// Количество стрелочных приборов
-	int nArrows = 0;
-	for (int c = 0; c < nControllers; c++)
-	{
-		nArrows += config.arrArrows[c];
-	}
-
-	// Размер массива сигналов 7SegDec
-	int n7SegDec = 0;
-	for (int c = 0; c < nControllers; c++)
-	{
-		for (int p = 0; p < 3; p++)
-		{
-			n7SegDec += config.arr7SegDec[c].port[p];
-		}
-	}
-
-	// Количество подключенных текстовых дисплеев
-	int nTextDisplays = 0;
-	for (int c = 0; c < nControllers; c++)
-	{
-		if (config.arrTextDisplaySize[c] > 0)
-			nTextDisplays++;
 	}
 
 	m_Signals.nPins = nPins;
@@ -1244,3 +825,18 @@ void UARTFrontView717::ReadBattVoltmerCalibrations()
 	m_BattVoltmeterCalib.m_Max = GetPrivateProfileInt("BattVoltmeter", "Max", 150, CALIBRATIONS_FILE);
 }
 
+CUnivCon::ConfigState UARTFrontView717::ParseConfig(const char* key, const char* value)
+{
+	auto val = std::regex_replace(value, std::regex(R"(^\s*(.*?)\s*;.*$)"), "$1");
+	if (val == "0" || val == "NotUsed")
+		return CUnivCon::NotUsed;
+	else if (val == "1" || val == "Input")
+		return CUnivCon::Input;
+	else if (val == "2" || val == "Output")
+		return CUnivCon::Output;
+	else if (val == "3" || val == "InputADC")
+		return CUnivCon::InputADC;
+
+	PRINT_MSG_ERROR("Unknown setting in %s: \"%s\"!\n", key, val.c_str());
+	return CUnivCon::NotUsed;
+}

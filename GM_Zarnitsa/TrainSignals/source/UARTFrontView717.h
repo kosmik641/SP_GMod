@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 #include <map>
+#include <regex>
 
 #define minmax(_val,_min,_max) max(_min, min(_val, _max))
 
@@ -85,7 +86,6 @@ private:
 	void ReadBattVoltmerCalibrations();
 
 	std::unique_ptr<CUnivCon> m_UnivConv;
-	//CUnivCon::Configuration m_Config;
 	CUnivCon::Signals m_Signals;
 
 	CRITICAL_SECTION m_CriticalSection{};
@@ -126,5 +126,7 @@ private:
 	} m_TCCalib, m_NMCalib, m_TMCalib,
 		m_KiloVoltmeterCalib, m_AmmeterCalib,
 		m_BattVoltmeterCalib;
+
+	static CUnivCon::ConfigState ParseConfig(const char* key,const char* value);
 };
 

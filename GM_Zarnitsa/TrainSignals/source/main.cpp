@@ -11,18 +11,21 @@ LUA_FUNCTION(API_Start)
 	if (g_Device.IsConnected())
 	{
 		PRINT_MSG("Already connected to COM%d\n", g_Device.GetPortNumber());
-		return 0;
+		LUA->PushBool(true);
+		return 1;
 	}
 
 	int inPortnumber = (int)LUA->GetNumber(-1);
 	if (inPortnumber < 1 || inPortnumber > 254)
 	{
-		PRINT_MSG_ERROR("TrainSignals: Enter valid COM port number (1-254)\n");
-		return 0;
+		PRINT_MSG_ERROR("Enter valid COM port number (1-254)\n");
+		LUA->PushBool(false);
+		return 1;
 	}
 
-	g_Device.Start(inPortnumber);
-	return 0;
+	int startError = g_Device.Start(inPortnumber);
+	LUA->PushBool(startError == 0);
+	return 1;
 }
 
 LUA_FUNCTION(API_Stop)

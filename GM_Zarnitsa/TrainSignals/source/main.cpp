@@ -23,7 +23,7 @@ LUA_FUNCTION(API_Start)
 		return 1;
 	}
 
-	int startError = g_Device.Start(inPortnumber);
+	int startError = g_Device.Start(inPortnumber, UNIVCON_VERSION);
 	LUA->PushBool(startError == 0);
 	return 1;
 }

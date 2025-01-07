@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include "utf8_to_cp1251.h"
 #include "params.h"
-#include <windows.h>
+#include "UnivCon3_2.h"
+#include <Windows.h>
 #include <memory>
 #include <string>
 #include <thread>
@@ -36,7 +37,7 @@ public:
 	UARTFrontView717();
 	~UARTFrontView717();
 
-	int Start(int port);
+	int Start(int port, int version);
 	void Stop(bool force = false);
 
 	void LoadSleepTimings();
@@ -52,24 +53,10 @@ public:
 	std::string m_ASOTPText;
 	std::string m_ASNPText;
 private:
-	enum ConfigState {
-		NotUsed = 0,
-		Input,
-		Output,
-		InputADC
-	};
-	int OpenCOMPort(int port);
-	void SetupArrays();
+	void SetupConfig();
 	void DeviceThreadFunc();
-	int SetupDevice();
-	void ReadSignalsDevice();
-	void WriteSignalsDevice();
-	void WriteUARTDevice();
-	void WriteShutdownDevice();
 	void DataExchangeInputs();
 	void DataExchangeOutputs();
-
-	void DestroyHandle();
 
 	bool CreateCalibrationsFile();
 
@@ -97,13 +84,12 @@ private:
 	void ReadAmmeterCalibrations();
 	void ReadBattVoltmerCalibrations();
 
-	static byte ConvertIntTo7DecSegByte(int number);
+	std::unique_ptr<CUnivCon> m_UnivConv;
+	//CUnivCon::Configuration m_Config;
+	CUnivCon::Signals m_Signals;
 
-	HANDLE m_hPort = INVALID_HANDLE_VALUE;
 	CRITICAL_SECTION m_CriticalSection{};
 	std::thread m_DeviceThread{};
-	int m_PortNumber = -1;
-	bool m_Connected = false;
 	bool m_ThreadRunning = false;
 	bool m_ThreadStop = true;
 	bool m_ThreadForceStop = false;
@@ -115,54 +101,6 @@ private:
 		DWORD afterWriteUART = 30;
 		DWORD afterAll = 30;
 	} m_sleepTimes;
-
-	struct SevenDecSignals
-	{
-		int port[3]{};
-	};
-
-	struct TextDisplaySignals
-	{
-		int on = 0;    // Включен экран
-		int ledOn = 0; // Включена подсветка.
-		char text[50]{};
-	};
-
-	struct Configuration {
-		int nControllers = 0; // Количество контроллеров
-		
-		std::unique_ptr<int[]> arrPins = nullptr; // Массив конфигурации пинов
-		std::unique_ptr<int[]> arrArrows = nullptr; // Количество стрелочных приборов на контроллер
-		std::unique_ptr<SevenDecSignals[]> arr7SegDec = nullptr; // Массив конфигурации 7-ми сегментного индикатора скорости для метро (через дешифратор К514ИД2)
-		std::unique_ptr<int[]> arrTextDisplaySize = nullptr; // Массив конфигурации текстовых дисплеев.
-
-		std::unique_ptr<int[]> arrADCPerController = nullptr;
-	} m_Config;
-
-	struct Data {
-		int nInputBytes = 0;
-		int nOutputBytes = 0;
-		int nUARTBytes = 0;
-
-		std::unique_ptr<byte[]> arrInputBytes = nullptr; // Массив для приема данных
-		std::unique_ptr<byte[]> arrOutputBytes = nullptr; // Массив для отправки данных
-		std::unique_ptr<byte[]> arrUARTBytes = nullptr; // Массив для отправки UART данных
-	} m_Data;
-
-	struct Signals {
-		int nPins = 0; // Размер массива конфигурации пинов
-		int nADC = 0; // Количество АЦП
-		int nArrows = 0; // Количество стрелочных сигналов
-		int n7SegDec = 0; // Размер массива сигналов 7SegDec
-		int nTextDisplays = 0; // Количество текстовых дисплеев
-
-		std::unique_ptr<int[]> arrInput = nullptr;
-		std::unique_ptr<int[]> arrOutput = nullptr;
-		std::unique_ptr<int[]> arrADC = nullptr;
-		std::unique_ptr<int[]> arrArrow = nullptr;
-		std::unique_ptr<int[]> arr7SegDec = nullptr;
-		std::unique_ptr<TextDisplaySignals[]> arrTextDisplay = nullptr;
-	} m_Signals;
 
 	struct StopcraneCalibrate
 	{

@@ -14,19 +14,66 @@ UARTFrontView717::~UARTFrontView717()
 	DeleteCriticalSection(&m_CriticalSection);
 }
 
-int UARTFrontView717::Start(int port)
+int UARTFrontView717::Start(int port,int version)
 {
 	PRINT_FUNCSIG;
 
-	int openResult = OpenCOMPort(port);
-	if (openResult)
-		return openResult;
-	m_PortNumber = port;
+	// Создаем объект CUnivCon
+	switch (version)
+	{
+	case 32:
+		PRINT_MSG_DBG("Select version 32\n");
+		m_UnivConv.reset(new CUnivCon3_2());
+		break;
+	default:
+		PRINT_MSG_ERROR("Version %d not implemented\n",version);
+		return -1;
+	}
 
-	SetupArrays();
+	// Подключение к контроллерам
+	CUnivCon::ErrorCode openError = m_UnivConv->Start(port);
+	switch (openError)
+	{
+	case CUnivCon::E_SUCCESS:
+		PRINT_MSG("Connected to COM%d\n", port);
+		break;
+	case CUnivCon::E_GETCOMMSTATE:
+		PRINT_MSG_ERROR("GetCommState failed.\n");
+		return openError;
+	case CUnivCon::E_SETCOMMSTATE:
+		PRINT_MSG_ERROR("SetCommMask failed.\n");
+		return openError;
+	case CUnivCon::E_SETCOMMMASK:
+		PRINT_MSG_ERROR("GetCommTimeouts failed.\n");
+		return openError;
+	case CUnivCon::E_GETCOMMTIMEOUTS:
+		PRINT_MSG_ERROR("SetCommTimeouts failed.\n");
+		return openError;
+	case CUnivCon::E_SETCOMMTIMEOUTS:
+		PRINT_MSG_ERROR("SetupComm failed.\n");
+		return openError;
+	case CUnivCon::E_SETUPCOMM:
+		return openError;
+	case CUnivCon::E_CONNECTFAIL:
+		PRINT_MSG_ERROR("Wrong answer.\n");
+		return openError;
+	case CUnivCon::E_WRONGPORT:
+		PRINT_MSG_ERROR("Port number %d not in range 1-254!", port);
+		return openError;
+	case CUnivCon::E_HANDLEERROR:
+		PRINT_MSG_ERROR("Fail to open COM%d\n", port);
+		return openError;
+	default:
+		PRINT_MSG_ERROR("Unknown error (%d)\n", openError);
+		return openError;
+	}
+
+	// Загрузка конфигураций
+	SetupConfig();
 	LoadSleepTimings();
 	LoadCalibartions();
 
+	// Запуск потока
 	m_DeviceThread = std::thread(&UARTFrontView717::DeviceThreadFunc, this);
 	m_DeviceThread.detach();
 
@@ -37,7 +84,7 @@ void UARTFrontView717::Stop(bool force)
 {
 	PRINT_FUNCSIG;
 
-	if (!m_Connected)
+	if (!IsConnected())
 		return;
 
 	m_ThreadStop = true;
@@ -122,12 +169,16 @@ void UARTFrontView717::LoadCalibartions()
 
 bool UARTFrontView717::IsConnected()
 {
-	return m_Connected;
+	if (m_UnivConv == nullptr)
+		return false;
+	return m_UnivConv->IsConnected();
 }
 
 int UARTFrontView717::GetPortNumber()
 {
-	return m_PortNumber;
+	if (m_UnivConv == nullptr)
+		return -1;
+	return m_UnivConv->GetPortNumber();
 }
 
 CRITICAL_SECTION* UARTFrontView717::GetCriticalSection()
@@ -135,565 +186,466 @@ CRITICAL_SECTION* UARTFrontView717::GetCriticalSection()
 	return &m_CriticalSection;
 }
 
-int UARTFrontView717::OpenCOMPort(int port)
-{
-	PRINT_FUNCSIG;
-
-	if (port < 1 || port > 254)
-	{
-		PRINT_MSG_ERROR("Port number %d not in range 1-254!", port);
-		return 0x255;
-	}
-
-	char portPath[7];
-	wsprintf(portPath, "COM%d", port);
-	m_hPort = CreateFile(portPath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
-
-	if (m_hPort == INVALID_HANDLE_VALUE)
-	{
-		PRINT_MSG_ERROR("Fail to open COM%d\n", port);
-		return -1;
-	}
-
-	DCB dcb;
-	BOOL success;
-
-	success = GetCommState(m_hPort, &dcb);
-	if (!success)
-	{
-		PRINT_MSG_ERROR("GetCommState failed.\n");
-		DestroyHandle();
-		return 0x01;
-	}
-
-	dcb.BaudRate = 115200;
-	dcb.ByteSize = 8;
-	dcb.Parity = NOPARITY;
-	dcb.StopBits = ONESTOPBIT;
-
-	success = SetCommState(m_hPort, &dcb);
-	if (!success)
-	{
-		PRINT_MSG_ERROR("SetCommState failed.\n");
-		DestroyHandle();
-		return 0x02;
-	}
-
-	success = SetCommMask(m_hPort, EV_TXEMPTY);
-	if (!success)
-	{
-		PRINT_MSG_ERROR("SetCommMask failed.\n");
-		DestroyHandle();
-		return 0x03;
-	}
-
-	COMMTIMEOUTS timeouts;
-	success = GetCommTimeouts(m_hPort, &timeouts);
-	if (!success)
-	{
-		PRINT_MSG_ERROR("GetCommTimeouts failed.\n");
-		DestroyHandle();
-		return 0x04;
-	}
-
-	timeouts.ReadIntervalTimeout = 5;
-	timeouts.ReadTotalTimeoutMultiplier = 10;
-	timeouts.ReadTotalTimeoutConstant = 5;
-	timeouts.WriteTotalTimeoutMultiplier = 10;
-	timeouts.WriteTotalTimeoutConstant = 5;
-	success = SetCommTimeouts(m_hPort, &timeouts);
-	if (!success)
-	{
-		PRINT_MSG_ERROR("SetCommTimeouts failed.\n");
-		DestroyHandle();
-		return 0x05;
-	}
-
-	success = SetupComm(m_hPort, 1000, 1000);
-	if (!success)
-	{
-		PRINT_MSG_ERROR("SetupComm failed.\n");
-		DestroyHandle();
-		return 0x06;
-	}
-
-	static byte cmdDetect[2]{0x00,0x80};
-	byte answerBuf{};
-
-	PurgeComm(m_hPort, PURGE_RXCLEAR | PURGE_TXCLEAR);
-	Sleep(10);
-
-	PRINT_MSG("Send mirror command...\n");
-	WriteFile(m_hPort, &cmdDetect, 2, nullptr, nullptr);
-	ReadFile(m_hPort, &answerBuf, 1, nullptr, nullptr);
-	PRINT_MSG_DBG("Answer = %02X\n", answerBuf);
-	if (answerBuf != 0x66)
-	{
-		PRINT_MSG_ERROR("Wrong answer.\n");
-		DestroyHandle();
-		return 0x10;
-	}
-
-	return 0;
-}
-
-void UARTFrontView717::SetupArrays()
+void UARTFrontView717::SetupConfig()
 {
 	PRINT_FUNCSIG;
 
 	// Количество контроллеров
 	int nControllers = 14;
 
+	CUnivCon::Configuration& config = m_UnivConv->m_Config;
+	config.nControllers = nControllers;
+
 	// Количество стрелочных приборов на контроллер
-	m_Config.arrArrows.reset(new int[nControllers]());
-	m_Config.arrArrows[2] = 3;
-	m_Config.arrArrows[3] = 3;
+	config.arrArrows.reset(new int[nControllers]());
+	config.arrArrows[2] = 3;
+	config.arrArrows[3] = 3;
 
 	// Массив конфигурации 7-ми сегментного индикатора скорости для метро (через дешифратор К514ИД2)
-	m_Config.arr7SegDec.reset(new SevenDecSignals[nControllers]());
-	m_Config.arr7SegDec[8].port[0] = 1;
+	config.arr7SegDec.reset(new CUnivCon::SevenDecSignals[nControllers]());
+	config.arr7SegDec[8].port[0] = 1;
 
 	// Массив конфигурации текстовых дисплеев. Число, отличное от нуля, обозначает кол-во символов в одной строке дисплея.
-	m_Config.arrTextDisplaySize.reset(new int[nControllers]());
-	m_Config.arrTextDisplaySize[12] = 20;
-	m_Config.arrTextDisplaySize[13] = 24;
+	config.arrTextDisplaySize.reset(new int[nControllers]());
+	config.arrTextDisplaySize[12] = 20;
+	config.arrTextDisplaySize[13] = 24;
 
 	// Главный конфигурационный массив
 	int nPins = 24 * nControllers;
-	m_Config.arrPins.reset(new int[nPins]());
+	config.arrPins.reset(new int[nPins]());
 
 	// 1.1
-	m_Config.arrPins[0] = NotUsed; // 
-	m_Config.arrPins[1] = NotUsed; // 
-	m_Config.arrPins[2] = NotUsed; // 
-	m_Config.arrPins[3] = NotUsed; // 
-	m_Config.arrPins[4] = NotUsed; // 
-	m_Config.arrPins[5] = NotUsed; // 
-	m_Config.arrPins[6] = NotUsed; // 
-	m_Config.arrPins[7] = InputADC; // Стопкран
+	config.arrPins[0] = CUnivCon::NotUsed; // 
+	config.arrPins[1] = CUnivCon::NotUsed; // 
+	config.arrPins[2] = CUnivCon::NotUsed; // 
+	config.arrPins[3] = CUnivCon::NotUsed; // 
+	config.arrPins[4] = CUnivCon::NotUsed; // 
+	config.arrPins[5] = CUnivCon::NotUsed; // 
+	config.arrPins[6] = CUnivCon::NotUsed; // 
+	config.arrPins[7] = CUnivCon::InputADC; // Стопкран
 
 	// 1.2
-	m_Config.arrPins[8] = Input; // УНЧ     
-	m_Config.arrPins[9] = Input; // Контроль ЭС
-	m_Config.arrPins[10] = Input; // Контр громког
-	m_Config.arrPins[11] = Input; // Радио
-	m_Config.arrPins[12] = Input; // Программа 2
-	m_Config.arrPins[13] = Input; // Программа 1
-	m_Config.arrPins[14] = Input; // Закрытие дверей
-	m_Config.arrPins[15] = Input; // ВПР
+	config.arrPins[8] = CUnivCon::Input; // УНЧ     
+	config.arrPins[9] = CUnivCon::Input; // Контроль ЭС
+	config.arrPins[10] = CUnivCon::Input; // Контр громког
+	config.arrPins[11] = CUnivCon::Input; // Радио
+	config.arrPins[12] = CUnivCon::Input; // Программа 2
+	config.arrPins[13] = CUnivCon::Input; // Программа 1
+	config.arrPins[14] = CUnivCon::Input; // Закрытие дверей
+	config.arrPins[15] = CUnivCon::Input; // ВПР
 
 	// 1.3
-	m_Config.arrPins[16] = Input; // Вкл. мотор компрессора
-	m_Config.arrPins[17] = Input; // БПСН
-	m_Config.arrPins[18] = Input; // Аварийное освещение
-	m_Config.arrPins[19] = Input; // Компрессор резервный
-	m_Config.arrPins[20] = Input; // АРС 13V
-	m_Config.arrPins[21] = Input; // АСНП: Вверх
-	m_Config.arrPins[22] = Input; // АСНП: Вниз
-	m_Config.arrPins[23] = Input; // АСНП: Меню
+	config.arrPins[16] = CUnivCon::Input; // Вкл. мотор компрессора
+	config.arrPins[17] = CUnivCon::Input; // БПСН
+	config.arrPins[18] = CUnivCon::Input; // Аварийное освещение
+	config.arrPins[19] = CUnivCon::Input; // Компрессор резервный
+	config.arrPins[20] = CUnivCon::Input; // АРС 13V
+	config.arrPins[21] = CUnivCon::Input; // АСНП: Вверх
+	config.arrPins[22] = CUnivCon::Input; // АСНП: Вниз
+	config.arrPins[23] = CUnivCon::Input; // АСНП: Меню
 
 	// 2.1
-    m_Config.arrPins[24] = InputADC; // КМ-013
-	m_Config.arrPins[25] = Input; // КВ-70: 10-8
-	m_Config.arrPins[26] = Input; // КВ-70: Реверс вкл
-	m_Config.arrPins[27] = Input; // КВ-70: Выбег
-	m_Config.arrPins[28] = Input; // КВ-70: Реверс назад
-	m_Config.arrPins[29] = Input; // КВ-70: У2-2
-	m_Config.arrPins[30] = Input; // КВ-70: У2-20Б
-	m_Config.arrPins[31] = Input; // КВ-70: У2-3
+    config.arrPins[24] = CUnivCon::InputADC; // КМ-013
+	config.arrPins[25] = CUnivCon::Input; // КВ-70: 10-8
+	config.arrPins[26] = CUnivCon::Input; // КВ-70: Реверс вкл
+	config.arrPins[27] = CUnivCon::Input; // КВ-70: Выбег
+	config.arrPins[28] = CUnivCon::Input; // КВ-70: Реверс назад
+	config.arrPins[29] = CUnivCon::Input; // КВ-70: У2-2
+	config.arrPins[30] = CUnivCon::Input; // КВ-70: У2-20Б
+	config.arrPins[31] = CUnivCon::Input; // КВ-70: У2-3
 
 	// 2.2
-	m_Config.arrPins[32] = Input; // АРС
-	m_Config.arrPins[33] = Input; // АЛС
-	m_Config.arrPins[34] = Input; // АРС-Р
-	m_Config.arrPins[35] = Input; // Дешифратор
-	m_Config.arrPins[36] = Input; // Осв. салона
-	m_Config.arrPins[37] = Input; // Осв. кабины
-	m_Config.arrPins[38] = Input; // Осв. пульта
-	m_Config.arrPins[39] = Input; // Вспомогательный поезд
+	config.arrPins[32] = CUnivCon::Input; // АРС
+	config.arrPins[33] = CUnivCon::Input; // АЛС
+	config.arrPins[34] = CUnivCon::Input; // АРС-Р
+	config.arrPins[35] = CUnivCon::Input; // Дешифратор
+	config.arrPins[36] = CUnivCon::Input; // Осв. салона
+	config.arrPins[37] = CUnivCon::Input; // Осв. кабины
+	config.arrPins[38] = CUnivCon::Input; // Осв. пульта
+	config.arrPins[39] = CUnivCon::Input; // Вспомогательный поезд
 
 	// 2.3
-	m_Config.arrPins[40] = Input; // Рез. закрытие дверей
-	m_Config.arrPins[41] = Input; // Вкл. БВ
-	m_Config.arrPins[42] = Input; // Двери левые (правая)
-	m_Config.arrPins[43] = Input; // Двери левые (левая)
-	m_Config.arrPins[44] = Input; // Выбор дверей (левые-0, правые-1)
-	m_Config.arrPins[45] = Input; // Бдительность (левая)
-	m_Config.arrPins[46] = Input; // Бдительность (правая)
-	m_Config.arrPins[47] = Input; // АВУ
+	config.arrPins[40] = CUnivCon::Input; // Рез. закрытие дверей
+	config.arrPins[41] = CUnivCon::Input; // Вкл. БВ
+	config.arrPins[42] = CUnivCon::Input; // Двери левые (правая)
+	config.arrPins[43] = CUnivCon::Input; // Двери левые (левая)
+	config.arrPins[44] = CUnivCon::Input; // Выбор дверей (левые-0, правые-1)
+	config.arrPins[45] = CUnivCon::Input; // Бдительность (левая)
+	config.arrPins[46] = CUnivCon::Input; // Бдительность (правая)
+	config.arrPins[47] = CUnivCon::Input; // АВУ
 
 	// 3.1
-	m_Config.arrPins[48] = Input; // Двери торцевые (1 гр.)
-	m_Config.arrPins[49] = Input; // Вентиляция кабины
-	m_Config.arrPins[50] = Input; // Вкл. авар. сигн. (2 гр.)
-	m_Config.arrPins[51] = Input; // Защита преобразователя
-	m_Config.arrPins[52] = Input; // Сигнализация
-	m_Config.arrPins[53] = Input; // Звонок
-	m_Config.arrPins[54] = Input; // Откл БВ
-	m_Config.arrPins[55] = Input; // Вентиль №1
+	config.arrPins[48] = CUnivCon::Input; // Двери торцевые (1 гр.)
+	config.arrPins[49] = CUnivCon::Input; // Вентиляция кабины
+	config.arrPins[50] = CUnivCon::Input; // Вкл. авар. сигн. (2 гр.)
+	config.arrPins[51] = CUnivCon::Input; // Защита преобразователя
+	config.arrPins[52] = CUnivCon::Input; // Сигнализация
+	config.arrPins[53] = CUnivCon::Input; // Звонок
+	config.arrPins[54] = CUnivCon::Input; // Откл БВ
+	config.arrPins[55] = CUnivCon::Input; // Вентиль №1
 
 	// 3.2
-	m_Config.arrPins[56] = Input; // Пуск резервный
-	m_Config.arrPins[57] = Input; // Аварийный ход
-	m_Config.arrPins[58] = Input; // Фары
-	m_Config.arrPins[59] = Input; // ВУС
-	m_Config.arrPins[60] = Input; // Авариные двери (тумблер)
-	m_Config.arrPins[61] = Input; // Аварийный ход (тумблер)
-	m_Config.arrPins[62] = Input; // ВКСТ
-	m_Config.arrPins[63] = Input; // Двери прав
+	config.arrPins[56] = CUnivCon::Input; // Пуск резервный
+	config.arrPins[57] = CUnivCon::Input; // Аварийный ход
+	config.arrPins[58] = CUnivCon::Input; // Фары
+	config.arrPins[59] = CUnivCon::Input; // ВУС
+	config.arrPins[60] = CUnivCon::Input; // Авариные двери (тумблер)
+	config.arrPins[61] = CUnivCon::Input; // Аварийный ход (тумблер)
+	config.arrPins[62] = CUnivCon::Input; // ВКСТ
+	config.arrPins[63] = CUnivCon::Input; // Двери прав
 
 	// 3.3
-	m_Config.arrPins[64] = Input; // КРУ1
-	m_Config.arrPins[65] = Input; // КРУ2
-	m_Config.arrPins[66] = NotUsed; // 
-	m_Config.arrPins[67] = Input; // АСОТП: Кнопка 1
-	m_Config.arrPins[68] = Input; // АСОТП: Кнопка 2
-	m_Config.arrPins[69] = Input; // АСОТП: Кнопка 3
-	m_Config.arrPins[70] = Input; // АСОТП: Кнопка 4
-	m_Config.arrPins[71] = NotUsed; // 
+	config.arrPins[64] = CUnivCon::Input; // КРУ1
+	config.arrPins[65] = CUnivCon::Input; // КРУ2
+	config.arrPins[66] = CUnivCon::NotUsed; // 
+	config.arrPins[67] = CUnivCon::Input; // АСОТП: Кнопка 1
+	config.arrPins[68] = CUnivCon::Input; // АСОТП: Кнопка 2
+	config.arrPins[69] = CUnivCon::Input; // АСОТП: Кнопка 3
+	config.arrPins[70] = CUnivCon::Input; // АСОТП: Кнопка 4
+	config.arrPins[71] = CUnivCon::NotUsed; // 
 
 	// 4.1
-	m_Config.arrPins[72] = Input; // Помощник: Закрытие дверей
-	m_Config.arrPins[73] = Input; // Помощник: Левые двери
-	m_Config.arrPins[74] = Input; // Помощник: Программа 1
-	m_Config.arrPins[75] = Input; // Помощник: Программа 2
-	m_Config.arrPins[76] = Input; // Педаль бдительности
-	m_Config.arrPins[77] = Input; // Пневмосигнал
-	m_Config.arrPins[78] = NotUsed; // 
-	m_Config.arrPins[79] = NotUsed; // 
+	config.arrPins[72] = CUnivCon::Input; // Помощник: Закрытие дверей
+	config.arrPins[73] = CUnivCon::Input; // Помощник: Левые двери
+	config.arrPins[74] = CUnivCon::Input; // Помощник: Программа 1
+	config.arrPins[75] = CUnivCon::Input; // Помощник: Программа 2
+	config.arrPins[76] = CUnivCon::Input; // Педаль бдительности
+	config.arrPins[77] = CUnivCon::Input; // Пневмосигнал
+	config.arrPins[78] = CUnivCon::NotUsed; // 
+	config.arrPins[79] = CUnivCon::NotUsed; // 
 
 	// 4.2
-	m_Config.arrPins[80] = NotUsed; // 
-	m_Config.arrPins[81] = NotUsed; // 
-	m_Config.arrPins[82] = NotUsed; // 
-	m_Config.arrPins[83] = NotUsed; // 
-	m_Config.arrPins[84] = Input; // Управление (предохранитель)
-	m_Config.arrPins[85] = Input; // Батарея (предохранитель)
-	m_Config.arrPins[86] = Input; // Без подписи (предохранитель)
-	m_Config.arrPins[87] = Input; // Преобразователь (предохранитель)
+	config.arrPins[80] = CUnivCon::NotUsed; // 
+	config.arrPins[81] = CUnivCon::NotUsed; // 
+	config.arrPins[82] = CUnivCon::NotUsed; // 
+	config.arrPins[83] = CUnivCon::NotUsed; // 
+	config.arrPins[84] = CUnivCon::Input; // Управление (предохранитель)
+	config.arrPins[85] = CUnivCon::Input; // Батарея (предохранитель)
+	config.arrPins[86] = CUnivCon::Input; // Без подписи (предохранитель)
+	config.arrPins[87] = CUnivCon::Input; // Преобразователь (предохранитель)
 
 	// 4.3
-	m_Config.arrPins[88] = Input; // Освещение1 (предохранитель)
-	m_Config.arrPins[89] = Input; // Освещение2 (предохранитель)
-	m_Config.arrPins[90] = Input; // УАВА
-	m_Config.arrPins[91] = NotUsed; // 
-	m_Config.arrPins[92] = NotUsed; // 
-	m_Config.arrPins[93] = NotUsed; // 
-	m_Config.arrPins[94] = NotUsed; // 
-	m_Config.arrPins[95] = NotUsed; // 
+	config.arrPins[88] = CUnivCon::Input; // Освещение1 (предохранитель)
+	config.arrPins[89] = CUnivCon::Input; // Освещение2 (предохранитель)
+	config.arrPins[90] = CUnivCon::Input; // УАВА
+	config.arrPins[91] = CUnivCon::NotUsed; // 
+	config.arrPins[92] = CUnivCon::NotUsed; // 
+	config.arrPins[93] = CUnivCon::NotUsed; // 
+	config.arrPins[94] = CUnivCon::NotUsed; // 
+	config.arrPins[95] = CUnivCon::NotUsed; // 
 
 	// 5.1
-	m_Config.arrPins[96] = Input; // РЦ1
-	m_Config.arrPins[97] = Input; // Батареи
-	m_Config.arrPins[98] = Input; // УОС
-	m_Config.arrPins[99] = Input; // Втр прижат
-	m_Config.arrPins[100] = Input; // Весь состав
-	m_Config.arrPins[101] = Input; // 1 половина
-	m_Config.arrPins[102] = Input; // 2 половина
-	m_Config.arrPins[103] = NotUsed; // 
+	config.arrPins[96] = CUnivCon::Input; // РЦ1
+	config.arrPins[97] = CUnivCon::Input; // Батареи
+	config.arrPins[98] = CUnivCon::Input; // УОС
+	config.arrPins[99] = CUnivCon::Input; // Втр прижат
+	config.arrPins[100] = CUnivCon::Input; // Весь состав
+	config.arrPins[101] = CUnivCon::Input; // 1 половина
+	config.arrPins[102] = CUnivCon::Input; // 2 половина
+	config.arrPins[103] = CUnivCon::NotUsed; // 
 
 	// 5.2
-	m_Config.arrPins[104] = Input; // Разобщ кран кран машиниста
-	m_Config.arrPins[105] = Input; // Стояночный тормоз
-	m_Config.arrPins[106] = Input; // ЭПВ-АРС
-	m_Config.arrPins[107] = NotUsed; // 
-	m_Config.arrPins[108] = NotUsed; // 
-	m_Config.arrPins[109] = NotUsed; // 
-	m_Config.arrPins[110] = NotUsed; // 
-	m_Config.arrPins[111] = NotUsed; // 
+	config.arrPins[104] = CUnivCon::Input; // Разобщ кран кран машиниста
+	config.arrPins[105] = CUnivCon::Input; // Стояночный тормоз
+	config.arrPins[106] = CUnivCon::Input; // ЭПВ-АРС
+	config.arrPins[107] = CUnivCon::NotUsed; // 
+	config.arrPins[108] = CUnivCon::NotUsed; // 
+	config.arrPins[109] = CUnivCon::NotUsed; // 
+	config.arrPins[110] = CUnivCon::NotUsed; // 
+	config.arrPins[111] = CUnivCon::NotUsed; // 
 
 	// 5.3
-	m_Config.arrPins[112] = Input; // A54-in
-	m_Config.arrPins[113] = Input; // ВУ-in
-	m_Config.arrPins[114] = Input; // A10-in
-	m_Config.arrPins[115] = Input; // A53-in
-	m_Config.arrPins[116] = Input; // A49-in
-	m_Config.arrPins[117] = Input; // A27-in
-	m_Config.arrPins[118] = Input; // AC1-in
-	m_Config.arrPins[119] = Input; // A21-in
+	config.arrPins[112] = CUnivCon::Input; // A54-in
+	config.arrPins[113] = CUnivCon::Input; // ВУ-in
+	config.arrPins[114] = CUnivCon::Input; // A10-in
+	config.arrPins[115] = CUnivCon::Input; // A53-in
+	config.arrPins[116] = CUnivCon::Input; // A49-in
+	config.arrPins[117] = CUnivCon::Input; // A27-in
+	config.arrPins[118] = CUnivCon::Input; // AC1-in
+	config.arrPins[119] = CUnivCon::Input; // A21-in
 
 	// 6.1
-	m_Config.arrPins[120] = Input; // A26-in
-	m_Config.arrPins[121] = Input; // AP63-in
-	m_Config.arrPins[122] = Input; // A17-in
-	m_Config.arrPins[123] = Input; // A44-in
-	m_Config.arrPins[124] = Input; // A45-in
-	m_Config.arrPins[125] = Input; // A11-in
-	m_Config.arrPins[126] = Input; // A71-in
-	m_Config.arrPins[127] = Input; // A41-in
+	config.arrPins[120] = CUnivCon::Input; // A26-in
+	config.arrPins[121] = CUnivCon::Input; // AP63-in
+	config.arrPins[122] = CUnivCon::Input; // A17-in
+	config.arrPins[123] = CUnivCon::Input; // A44-in
+	config.arrPins[124] = CUnivCon::Input; // A45-in
+	config.arrPins[125] = CUnivCon::Input; // A11-in
+	config.arrPins[126] = CUnivCon::Input; // A71-in
+	config.arrPins[127] = CUnivCon::Input; // A41-in
 
 	// 6.2
-	m_Config.arrPins[128] = Input; // A74-in
-	m_Config.arrPins[129] = Input; // A73-in
-	m_Config.arrPins[130] = Input; // A79-in
-	m_Config.arrPins[131] = Input; // A42-in
-	m_Config.arrPins[132] = Input; // A46-in
-	m_Config.arrPins[133] = Input; // A47-in
-	m_Config.arrPins[134] = Input; // AB1-in
-	m_Config.arrPins[135] = Input; // A29-in
+	config.arrPins[128] = CUnivCon::Input; // A74-in
+	config.arrPins[129] = CUnivCon::Input; // A73-in
+	config.arrPins[130] = CUnivCon::Input; // A79-in
+	config.arrPins[131] = CUnivCon::Input; // A42-in
+	config.arrPins[132] = CUnivCon::Input; // A46-in
+	config.arrPins[133] = CUnivCon::Input; // A47-in
+	config.arrPins[134] = CUnivCon::Input; // AB1-in
+	config.arrPins[135] = CUnivCon::Input; // A29-in
 
 	// 6.3
-	m_Config.arrPins[136] = Input; // A76-in
-	m_Config.arrPins[137] = Input; // A48-in
-	m_Config.arrPins[138] = Input; // A56-in
-	m_Config.arrPins[139] = Input; // A65-in
-	m_Config.arrPins[140] = Input; // A25-in
-	m_Config.arrPins[141] = Input; // A30-in
-	m_Config.arrPins[142] = Input; // A1-in
-	m_Config.arrPins[143] = Input; // A20-in
+	config.arrPins[136] = CUnivCon::Input; // A76-in
+	config.arrPins[137] = CUnivCon::Input; // A48-in
+	config.arrPins[138] = CUnivCon::Input; // A56-in
+	config.arrPins[139] = CUnivCon::Input; // A65-in
+	config.arrPins[140] = CUnivCon::Input; // A25-in
+	config.arrPins[141] = CUnivCon::Input; // A30-in
+	config.arrPins[142] = CUnivCon::Input; // A1-in
+	config.arrPins[143] = CUnivCon::Input; // A20-in
 
 	// 7.1
-	m_Config.arrPins[144] = Input; // A32-in
-	m_Config.arrPins[145] = Input; // A13-in
-	m_Config.arrPins[146] = Input; // A43-in
-	m_Config.arrPins[147] = Input; // A31-in
-	m_Config.arrPins[148] = Input; // A77-in
-	m_Config.arrPins[149] = Input; // A78-in
-	m_Config.arrPins[150] = Input; // ВБД
-	m_Config.arrPins[151] = Input; // A75-in
+	config.arrPins[144] = CUnivCon::Input; // A32-in
+	config.arrPins[145] = CUnivCon::Input; // A13-in
+	config.arrPins[146] = CUnivCon::Input; // A43-in
+	config.arrPins[147] = CUnivCon::Input; // A31-in
+	config.arrPins[148] = CUnivCon::Input; // A77-in
+	config.arrPins[149] = CUnivCon::Input; // A78-in
+	config.arrPins[150] = CUnivCon::Input; // ВБД
+	config.arrPins[151] = CUnivCon::Input; // A75-in
 	
 	// 7.2
-	m_Config.arrPins[152] = Input; // A22-in
-	m_Config.arrPins[153] = Input; // A8-in
-	m_Config.arrPins[154] = Input; // A28-in
-	m_Config.arrPins[155] = Input; // A38-in
-	m_Config.arrPins[156] = Input; // A14-in
-	m_Config.arrPins[157] = Input; // A39-in
-	m_Config.arrPins[158] = Input; // A6-in
-	m_Config.arrPins[159] = Input; // A70-in
+	config.arrPins[152] = CUnivCon::Input; // A22-in
+	config.arrPins[153] = CUnivCon::Input; // A8-in
+	config.arrPins[154] = CUnivCon::Input; // A28-in
+	config.arrPins[155] = CUnivCon::Input; // A38-in
+	config.arrPins[156] = CUnivCon::Input; // A14-in
+	config.arrPins[157] = CUnivCon::Input; // A39-in
+	config.arrPins[158] = CUnivCon::Input; // A6-in
+	config.arrPins[159] = CUnivCon::Input; // A70-in
 	
 	// 7.3
-	m_Config.arrPins[160] = Input; // A4-in
-	m_Config.arrPins[161] = Input; // A5-in
-	m_Config.arrPins[162] = Input; // A2-in
-	m_Config.arrPins[163] = Input; // A3-in
-	m_Config.arrPins[164] = Input; // A50-in
-	m_Config.arrPins[165] = Input; // A52-in
-	m_Config.arrPins[166] = Input; // A40-in
-	m_Config.arrPins[167] = Input; // A80-in
+	config.arrPins[160] = CUnivCon::Input; // A4-in
+	config.arrPins[161] = CUnivCon::Input; // A5-in
+	config.arrPins[162] = CUnivCon::Input; // A2-in
+	config.arrPins[163] = CUnivCon::Input; // A3-in
+	config.arrPins[164] = CUnivCon::Input; // A50-in
+	config.arrPins[165] = CUnivCon::Input; // A52-in
+	config.arrPins[166] = CUnivCon::Input; // A40-in
+	config.arrPins[167] = CUnivCon::Input; // A80-in
 	
 
 	// 8.1
-	m_Config.arrPins[168] = Input; // A66-in
-	m_Config.arrPins[169] = Input; // A18-in
-	m_Config.arrPins[170] = Input; // A24-in
-	m_Config.arrPins[171] = Input; // A19-in
-	m_Config.arrPins[172] = Input; // A37-in
-	m_Config.arrPins[173] = Input; // A51-in
-	m_Config.arrPins[174] = Input; // A12-in
-	m_Config.arrPins[175] = Input; // A16-in
+	config.arrPins[168] = CUnivCon::Input; // A66-in
+	config.arrPins[169] = CUnivCon::Input; // A18-in
+	config.arrPins[170] = CUnivCon::Input; // A24-in
+	config.arrPins[171] = CUnivCon::Input; // A19-in
+	config.arrPins[172] = CUnivCon::Input; // A37-in
+	config.arrPins[173] = CUnivCon::Input; // A51-in
+	config.arrPins[174] = CUnivCon::Input; // A12-in
+	config.arrPins[175] = CUnivCon::Input; // A16-in
 	
 	// 8.2	
-	m_Config.arrPins[176] = Input; // A68-in
-	m_Config.arrPins[177] = Input; // A72-in
-	m_Config.arrPins[178] = Input; // A7-in
-	m_Config.arrPins[179] = Input; // A9-in
-	m_Config.arrPins[180] = Input; // A57-in
-	m_Config.arrPins[181] = Input; // A81-in
-	m_Config.arrPins[182] = Input; // A82-in
-	m_Config.arrPins[183] = Input; // A15-in
+	config.arrPins[176] = CUnivCon::Input; // A68-in
+	config.arrPins[177] = CUnivCon::Input; // A72-in
+	config.arrPins[178] = CUnivCon::Input; // A7-in
+	config.arrPins[179] = CUnivCon::Input; // A9-in
+	config.arrPins[180] = CUnivCon::Input; // A57-in
+	config.arrPins[181] = CUnivCon::Input; // A81-in
+	config.arrPins[182] = CUnivCon::Input; // A82-in
+	config.arrPins[183] = CUnivCon::Input; // A15-in
 	
 	// 8.3
-	m_Config.arrPins[184] = Input; // AB6-in
-	m_Config.arrPins[185] = Input; // A83-in
-	m_Config.arrPins[186] = Input; // A33-in (АИС)
-	m_Config.arrPins[187] = Input; // AB3-in
-	m_Config.arrPins[188] = NotUsed; // TODO: УППС
-	m_Config.arrPins[189] = NotUsed; //
-	m_Config.arrPins[190] = NotUsed; // 
-	m_Config.arrPins[191] = NotUsed; // 
+	config.arrPins[184] = CUnivCon::Input; // AB6-in
+	config.arrPins[185] = CUnivCon::Input; // A83-in
+	config.arrPins[186] = CUnivCon::Input; // A33-in (АИС)
+	config.arrPins[187] = CUnivCon::Input; // AB3-in
+	config.arrPins[188] = CUnivCon::NotUsed; // TODO: УППС
+	config.arrPins[189] = CUnivCon::NotUsed; //
+	config.arrPins[190] = CUnivCon::NotUsed; // 
+	config.arrPins[191] = CUnivCon::NotUsed; // 
 	
 	// 9.1
-	m_Config.arrPins[192] = Output; // Индикатор скорости
-	m_Config.arrPins[193] = Output; // Индикатор скорости
-	m_Config.arrPins[194] = Output; // Индикатор скорости
-	m_Config.arrPins[195] = Output; // Индикатор скорости
-	m_Config.arrPins[196] = Output; // Индикатор скорости
-	m_Config.arrPins[197] = Output; // Индикатор скорости
-	m_Config.arrPins[198] = Output; // Индикатор скорости
-	m_Config.arrPins[199] = Output; // Индикатор скорости
+	config.arrPins[192] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[193] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[194] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[195] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[196] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[197] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[198] = CUnivCon::Output; // Индикатор скорости
+	config.arrPins[199] = CUnivCon::Output; // Индикатор скорости
 	
 	// 9.2
-	m_Config.arrPins[200] = Output; // ОЧ
-	m_Config.arrPins[201] = Output; // 0
-	m_Config.arrPins[202] = Output; // 40
-	m_Config.arrPins[203] = Output; // 60
-	m_Config.arrPins[204] = Output; // 70
-	m_Config.arrPins[205] = Output; // 80
-	m_Config.arrPins[206] = Output; // ЛСД
-	m_Config.arrPins[207] = NotUsed; // 
+	config.arrPins[200] = CUnivCon::Output; // ОЧ
+	config.arrPins[201] = CUnivCon::Output; // 0
+	config.arrPins[202] = CUnivCon::Output; // 40
+	config.arrPins[203] = CUnivCon::Output; // 60
+	config.arrPins[204] = CUnivCon::Output; // 70
+	config.arrPins[205] = CUnivCon::Output; // 80
+	config.arrPins[206] = CUnivCon::Output; // ЛСД
+	config.arrPins[207] = CUnivCon::NotUsed; // 
 	
 	// 9.3
-	m_Config.arrPins[208] = Output; // ЛХ"РК"
-	m_Config.arrPins[209] = Output; // РП
-	m_Config.arrPins[210] = Output; // ЛСН
-	m_Config.arrPins[211] = Output; // ЛЭКК
-	m_Config.arrPins[212] = Output; // ЛКВЦ
-	m_Config.arrPins[213] = Output; // ЛН
-	m_Config.arrPins[214] = Output; // РС
-	m_Config.arrPins[215] = Output; // ЛКВД
+	config.arrPins[208] = CUnivCon::Output; // ЛХ"РК"
+	config.arrPins[209] = CUnivCon::Output; // РП
+	config.arrPins[210] = CUnivCon::Output; // ЛСН
+	config.arrPins[211] = CUnivCon::Output; // ЛЭКК
+	config.arrPins[212] = CUnivCon::Output; // ЛКВЦ
+	config.arrPins[213] = CUnivCon::Output; // ЛН
+	config.arrPins[214] = CUnivCon::Output; // РС
+	config.arrPins[215] = CUnivCon::Output; // ЛКВД
 	
 	// 10.1
-	m_Config.arrPins[216] = NotUsed; // 
-	m_Config.arrPins[217] = NotUsed; // 
-	m_Config.arrPins[218] = NotUsed; // 
-	m_Config.arrPins[219] = Output; // ЛВД
-	m_Config.arrPins[220] = Output; // ЛКТ
-	m_Config.arrPins[221] = Output; // ЛСТ
-	m_Config.arrPins[222] = NotUsed; // 
-	m_Config.arrPins[223] = NotUsed; // 
+	config.arrPins[216] = CUnivCon::NotUsed; // 
+	config.arrPins[217] = CUnivCon::NotUsed; // 
+	config.arrPins[218] = CUnivCon::NotUsed; // 
+	config.arrPins[219] = CUnivCon::Output; // ЛВД
+	config.arrPins[220] = CUnivCon::Output; // ЛКТ
+	config.arrPins[221] = CUnivCon::Output; // ЛСТ
+	config.arrPins[222] = CUnivCon::NotUsed; // 
+	config.arrPins[223] = CUnivCon::NotUsed; // 
 	
 	// 10.2
-	m_Config.arrPins[224] = NotUsed; // 
-	m_Config.arrPins[225] = NotUsed; // 
-	m_Config.arrPins[226] = NotUsed; // 
-	m_Config.arrPins[227] = Output; // Двери левые (левая) светодиод
-	m_Config.arrPins[228] = Output; // Двери левые (правая) светодиод
-	m_Config.arrPins[229] = Output; // РП светодиод
-	m_Config.arrPins[230] = Output; // Защита преобраз. светодиод
-	m_Config.arrPins[231] = Output; // Лампа контроля невключения вентиляции
+	config.arrPins[224] = CUnivCon::NotUsed; // 
+	config.arrPins[225] = CUnivCon::NotUsed; // 
+	config.arrPins[226] = CUnivCon::NotUsed; // 
+	config.arrPins[227] = CUnivCon::Output; // Двери левые (левая) светодиод
+	config.arrPins[228] = CUnivCon::Output; // Двери левые (правая) светодиод
+	config.arrPins[229] = CUnivCon::Output; // РП светодиод
+	config.arrPins[230] = CUnivCon::Output; // Защита преобраз. светодиод
+	config.arrPins[231] = CUnivCon::Output; // Лампа контроля невключения вентиляции
 	
 	// 10.3
-	m_Config.arrPins[232] = Output; // ЛСП
-	m_Config.arrPins[233] = Output; // АВУ
-	m_Config.arrPins[234] = Output; // ЛКВП
-	m_Config.arrPins[235] = Output; // Пневмотормоз
-	m_Config.arrPins[236] = Output; // ИСТ
-	m_Config.arrPins[237] = Output; // Двери правые
-	m_Config.arrPins[238] = NotUsed; // 
-	m_Config.arrPins[239] = NotUsed; // 
+	config.arrPins[232] = CUnivCon::Output; // ЛСП
+	config.arrPins[233] = CUnivCon::Output; // АВУ
+	config.arrPins[234] = CUnivCon::Output; // ЛКВП
+	config.arrPins[235] = CUnivCon::Output; // Пневмотормоз
+	config.arrPins[236] = CUnivCon::Output; // ИСТ
+	config.arrPins[237] = CUnivCon::Output; // Двери правые
+	config.arrPins[238] = CUnivCon::NotUsed; // 
+	config.arrPins[239] = CUnivCon::NotUsed; // 
 	
 	// 11.1
-	m_Config.arrPins[240] = Output; // ВУ-o
-	m_Config.arrPins[241] = Output; // A54-o
-	m_Config.arrPins[242] = Output; // A53-o
-	m_Config.arrPins[243] = Output; // A10-o
-	m_Config.arrPins[244] = Output; // A27-o
-	m_Config.arrPins[245] = Output; // A49-o
-	m_Config.arrPins[246] = Output; // A21-o
-	m_Config.arrPins[247] = Output; // AC-1-o
+	config.arrPins[240] = CUnivCon::Output; // ВУ-o
+	config.arrPins[241] = CUnivCon::Output; // A54-o
+	config.arrPins[242] = CUnivCon::Output; // A53-o
+	config.arrPins[243] = CUnivCon::Output; // A10-o
+	config.arrPins[244] = CUnivCon::Output; // A27-o
+	config.arrPins[245] = CUnivCon::Output; // A49-o
+	config.arrPins[246] = CUnivCon::Output; // A21-o
+	config.arrPins[247] = CUnivCon::Output; // AC-1-o
 	
 	// 11.2
-	m_Config.arrPins[248] = Output; // AP63-o
-	m_Config.arrPins[249] = Output; // A26-o
-	m_Config.arrPins[250] = Output; // A44-o
-	m_Config.arrPins[251] = Output; // A17-o
-	m_Config.arrPins[252] = Output; // A11-o
-	m_Config.arrPins[253] = Output; // A45-o
-	m_Config.arrPins[254] = Output; // A41-o
-	m_Config.arrPins[255] = Output; // A71-o
+	config.arrPins[248] = CUnivCon::Output; // AP63-o
+	config.arrPins[249] = CUnivCon::Output; // A26-o
+	config.arrPins[250] = CUnivCon::Output; // A44-o
+	config.arrPins[251] = CUnivCon::Output; // A17-o
+	config.arrPins[252] = CUnivCon::Output; // A11-o
+	config.arrPins[253] = CUnivCon::Output; // A45-o
+	config.arrPins[254] = CUnivCon::Output; // A41-o
+	config.arrPins[255] = CUnivCon::Output; // A71-o
 	
 	// 11.3
-	m_Config.arrPins[256] = Output; // A73-o
-	m_Config.arrPins[257] = Output; // A74-o
-	m_Config.arrPins[258] = Output; // A42-o
-	m_Config.arrPins[259] = Output; // A79-o
-	m_Config.arrPins[260] = Output; // A47-o
-	m_Config.arrPins[261] = Output; // A46-o
-	m_Config.arrPins[262] = Output; // A29-o
-	m_Config.arrPins[263] = Output; // AB1-o
+	config.arrPins[256] = CUnivCon::Output; // A73-o
+	config.arrPins[257] = CUnivCon::Output; // A74-o
+	config.arrPins[258] = CUnivCon::Output; // A42-o
+	config.arrPins[259] = CUnivCon::Output; // A79-o
+	config.arrPins[260] = CUnivCon::Output; // A47-o
+	config.arrPins[261] = CUnivCon::Output; // A46-o
+	config.arrPins[262] = CUnivCon::Output; // A29-o
+	config.arrPins[263] = CUnivCon::Output; // AB1-o
 	
 	// 12.1
-	m_Config.arrPins[264] = Output; // A48-o
-	m_Config.arrPins[265] = Output; // A76-o
-	m_Config.arrPins[266] = Output; // A65-o
-	m_Config.arrPins[267] = Output; // A56-o
-	m_Config.arrPins[268] = Output; // A30-o
-	m_Config.arrPins[269] = Output; // A25-o
-	m_Config.arrPins[270] = Output; // A20-o
-	m_Config.arrPins[271] = Output; // A1-o
+	config.arrPins[264] = CUnivCon::Output; // A48-o
+	config.arrPins[265] = CUnivCon::Output; // A76-o
+	config.arrPins[266] = CUnivCon::Output; // A65-o
+	config.arrPins[267] = CUnivCon::Output; // A56-o
+	config.arrPins[268] = CUnivCon::Output; // A30-o
+	config.arrPins[269] = CUnivCon::Output; // A25-o
+	config.arrPins[270] = CUnivCon::Output; // A20-o
+	config.arrPins[271] = CUnivCon::Output; // A1-o
 	
 	// 12.2
-	m_Config.arrPins[272] = Output; // A13-o
-	m_Config.arrPins[273] = Output; // A32-o
-	m_Config.arrPins[274] = Output; // A31-o
-	m_Config.arrPins[275] = Output; // A43-o
-	m_Config.arrPins[276] = Output; // A78-o
-	m_Config.arrPins[277] = Output; // A77-o
-	m_Config.arrPins[278] = Output; // A75-o
-	m_Config.arrPins[279] = NotUsed; // 
+	config.arrPins[272] = CUnivCon::Output; // A13-o
+	config.arrPins[273] = CUnivCon::Output; // A32-o
+	config.arrPins[274] = CUnivCon::Output; // A31-o
+	config.arrPins[275] = CUnivCon::Output; // A43-o
+	config.arrPins[276] = CUnivCon::Output; // A78-o
+	config.arrPins[277] = CUnivCon::Output; // A77-o
+	config.arrPins[278] = CUnivCon::Output; // A75-o
+	config.arrPins[279] = CUnivCon::NotUsed; // 
 	
 	// 12.3
-	m_Config.arrPins[280] = NotUsed; // 
-	m_Config.arrPins[281] = NotUsed; // 
-	m_Config.arrPins[282] = Output; // АСОТП: LED 4
-	m_Config.arrPins[283] = Output; // АСОТП: LED 3
-	m_Config.arrPins[284] = Output; // АСОТП: LED 2
-	m_Config.arrPins[285] = Output; // АСОТП: LED 1
-	m_Config.arrPins[286] = Output; // АСОТП: НЕИСПР.
-	m_Config.arrPins[287] = Output; // АСОТП: ПОЖАР !
+	config.arrPins[280] = CUnivCon::NotUsed; // 
+	config.arrPins[281] = CUnivCon::NotUsed; // 
+	config.arrPins[282] = CUnivCon::Output; // АСОТП: LED 4
+	config.arrPins[283] = CUnivCon::Output; // АСОТП: LED 3
+	config.arrPins[284] = CUnivCon::Output; // АСОТП: LED 2
+	config.arrPins[285] = CUnivCon::Output; // АСОТП: LED 1
+	config.arrPins[286] = CUnivCon::Output; // АСОТП: НЕИСПР.
+	config.arrPins[287] = CUnivCon::Output; // АСОТП: ПОЖАР !
 	
 	// 13.1
-	m_Config.arrPins[288] = Output; // A8-o
-	m_Config.arrPins[289] = Output; // A22-o
-	m_Config.arrPins[290] = Output; // A38-o
-	m_Config.arrPins[291] = Output; // A28-o
-	m_Config.arrPins[292] = Output; // A39-o
-	m_Config.arrPins[293] = Output; // A14-o
-	m_Config.arrPins[294] = Output; // A70-o
-	m_Config.arrPins[295] = Output; // A6-o
+	config.arrPins[288] = CUnivCon::Output; // A8-o
+	config.arrPins[289] = CUnivCon::Output; // A22-o
+	config.arrPins[290] = CUnivCon::Output; // A38-o
+	config.arrPins[291] = CUnivCon::Output; // A28-o
+	config.arrPins[292] = CUnivCon::Output; // A39-o
+	config.arrPins[293] = CUnivCon::Output; // A14-o
+	config.arrPins[294] = CUnivCon::Output; // A70-o
+	config.arrPins[295] = CUnivCon::Output; // A6-o
 	
 	// 13.2
-	m_Config.arrPins[296] = Output; // A5-o
-	m_Config.arrPins[297] = Output; // A4-o
-	m_Config.arrPins[298] = Output; // A3-o
-	m_Config.arrPins[299] = Output; // A2-o
-	m_Config.arrPins[300] = Output; // A52-o
-	m_Config.arrPins[301] = Output; // A50-o
-	m_Config.arrPins[302] = Output; // A80-o
-	m_Config.arrPins[303] = Output; // A40-o
+	config.arrPins[296] = CUnivCon::Output; // A5-o
+	config.arrPins[297] = CUnivCon::Output; // A4-o
+	config.arrPins[298] = CUnivCon::Output; // A3-o
+	config.arrPins[299] = CUnivCon::Output; // A2-o
+	config.arrPins[300] = CUnivCon::Output; // A52-o
+	config.arrPins[301] = CUnivCon::Output; // A50-o
+	config.arrPins[302] = CUnivCon::Output; // A80-o
+	config.arrPins[303] = CUnivCon::Output; // A40-o
 	
 	// 13.3
-	m_Config.arrPins[304] = Output; // A18-o
-	m_Config.arrPins[305] = Output; // A66-o
-	m_Config.arrPins[306] = Output; // A19-o
-	m_Config.arrPins[307] = Output; // A24-o
-	m_Config.arrPins[308] = Output; // A51-o
-	m_Config.arrPins[309] = Output; // A37-o
-	m_Config.arrPins[310] = Output; // A16-o
-	m_Config.arrPins[311] = Output; // A12-o
+	config.arrPins[304] = CUnivCon::Output; // A18-o
+	config.arrPins[305] = CUnivCon::Output; // A66-o
+	config.arrPins[306] = CUnivCon::Output; // A19-o
+	config.arrPins[307] = CUnivCon::Output; // A24-o
+	config.arrPins[308] = CUnivCon::Output; // A51-o
+	config.arrPins[309] = CUnivCon::Output; // A37-o
+	config.arrPins[310] = CUnivCon::Output; // A16-o
+	config.arrPins[311] = CUnivCon::Output; // A12-o
 	
 	// 14.1
-	m_Config.arrPins[312] = Output; // A72-o
-	m_Config.arrPins[313] = Output; // A68-o
-	m_Config.arrPins[314] = Output; // A9-o
-	m_Config.arrPins[315] = Output; // A7-o
-	m_Config.arrPins[316] = Output; // A81-o
-	m_Config.arrPins[317] = Output; // A57-o
-	m_Config.arrPins[318] = Output; // A15-o
-	m_Config.arrPins[319] = Output; // A82-o
+	config.arrPins[312] = CUnivCon::Output; // A72-o
+	config.arrPins[313] = CUnivCon::Output; // A68-o
+	config.arrPins[314] = CUnivCon::Output; // A9-o
+	config.arrPins[315] = CUnivCon::Output; // A7-o
+	config.arrPins[316] = CUnivCon::Output; // A81-o
+	config.arrPins[317] = CUnivCon::Output; // A57-o
+	config.arrPins[318] = CUnivCon::Output; // A15-o
+	config.arrPins[319] = CUnivCon::Output; // A82-o
 	
 	// 14.2
-	m_Config.arrPins[320] = Output; // A83-o
-	m_Config.arrPins[321] = Output; // AB6-o
-	m_Config.arrPins[322] = Output; // AB3-o
-	m_Config.arrPins[323] = Output; // A33-o
-	m_Config.arrPins[324] = NotUsed; // 
-	m_Config.arrPins[325] = NotUsed; // 
-	m_Config.arrPins[326] = NotUsed; // 
-	m_Config.arrPins[327] = NotUsed; // 
+	config.arrPins[320] = CUnivCon::Output; // A83-o
+	config.arrPins[321] = CUnivCon::Output; // AB6-o
+	config.arrPins[322] = CUnivCon::Output; // AB3-o
+	config.arrPins[323] = CUnivCon::Output; // A33-o
+	config.arrPins[324] = CUnivCon::NotUsed; // 
+	config.arrPins[325] = CUnivCon::NotUsed; // 
+	config.arrPins[326] = CUnivCon::NotUsed; // 
+	config.arrPins[327] = CUnivCon::NotUsed; // 
 	
 	// 14.3
-	m_Config.arrPins[328] = Output; // Клапан 1
-	m_Config.arrPins[329] = Output; // Клапан 2
-	m_Config.arrPins[330] = NotUsed; // 
-	m_Config.arrPins[331] = Output; // Клапан 3
-	m_Config.arrPins[332] = NotUsed; // 
-	m_Config.arrPins[333] = NotUsed; // 
-	m_Config.arrPins[334] = NotUsed; // 
-	m_Config.arrPins[335] = NotUsed; // 
+	config.arrPins[328] = CUnivCon::Output; // Клапан 1
+	config.arrPins[329] = CUnivCon::Output; // Клапан 2
+	config.arrPins[330] = CUnivCon::NotUsed; // 
+	config.arrPins[331] = CUnivCon::Output; // Клапан 3
+	config.arrPins[332] = CUnivCon::NotUsed; // 
+	config.arrPins[333] = CUnivCon::NotUsed; // 
+	config.arrPins[334] = CUnivCon::NotUsed; // 
+	config.arrPins[335] = CUnivCon::NotUsed; // 
 	
 	// Считаем размеры массивов
 	// Количество ADC
-	m_Config.arrADCPerController.reset(new int[nControllers]());
+	config.arrADCPerController.reset(new int[nControllers]());
 	int nADC = 0;
 	for (int i = 0; i < nPins; i++)
 	{
 		int i_Controller = i / 24;
-		if (m_Config.arrPins[i] == InputADC)
+		if (config.arrPins[i] == CUnivCon::InputADC)
 		{
 			nADC++;
-			m_Config.arrADCPerController[i_Controller]++;
+			config.arrADCPerController[i_Controller]++;
 		}
 	}
 
@@ -701,7 +653,7 @@ void UARTFrontView717::SetupArrays()
 	int nArrows = 0;
 	for (int c = 0; c < nControllers; c++)
 	{
-		nArrows += m_Config.arrArrows[c];
+		nArrows += config.arrArrows[c];
 	}
 
 	// Размер массива сигналов 7SegDec
@@ -710,7 +662,7 @@ void UARTFrontView717::SetupArrays()
 	{
 		for (int p = 0; p < 3; p++)
 		{
-			n7SegDec += m_Config.arr7SegDec[c].port[p];
+			n7SegDec += config.arr7SegDec[c].port[p];
 		}
 	}
 
@@ -718,11 +670,10 @@ void UARTFrontView717::SetupArrays()
 	int nTextDisplays = 0;
 	for (int c = 0; c < nControllers; c++)
 	{
-		if (m_Config.arrTextDisplaySize[c] > 0)
+		if (config.arrTextDisplaySize[c] > 0)
 			nTextDisplays++;
 	}
 
-	m_Config.nControllers = nControllers;
 	m_Signals.nPins = nPins;
 	m_Signals.nADC = nADC;
 	m_Signals.nArrows = nArrows;
@@ -735,8 +686,7 @@ void UARTFrontView717::SetupArrays()
 	m_Signals.arrADC.reset(new int[nADC]());
 	m_Signals.arrArrow.reset(new int[nArrows]());
 	m_Signals.arr7SegDec.reset(new int[n7SegDec]());
-	m_Signals.arrTextDisplay.reset(new TextDisplaySignals[nTextDisplays]());
-
+	m_Signals.arrTextDisplay.reset(new CUnivCon::TextDisplaySignals[nTextDisplays]());
 
 	// Задание типа Integer для переменных
 	m_NW2VarTableInput.VarTable["ControllerPosition"].type = 3;
@@ -744,289 +694,13 @@ void UARTFrontView717::SetupArrays()
 	m_NW2VarTableInput.VarTable["KRUPosition"].type = 3;
 	m_NW2VarTableInput.VarTable["CranePosition"].type = 3;
 
-	PRINT_MSG_DBG("m_Config.nControllers = %d\n", nControllers);
-	PRINT_MSG_DBG("m_Signals.arrInput.count = %d\n", nPins);
-	PRINT_MSG_DBG("m_Signals.arrOutput.count = %d\n", nPins);
-	PRINT_MSG_DBG("m_Signals.arrADC.count = %d\n", nADC);
-	PRINT_MSG_DBG("m_Signals.arrArrow.count = %d\n", nArrows);
-	PRINT_MSG_DBG("m_Signals.arr7SegDec.count = %d\n", n7SegDec);
-	PRINT_MSG_DBG("m_Signals.arrTextDisplay.count = %d\n", nTextDisplays);
-}
-
-int UARTFrontView717::SetupDevice()
-{
-	PRINT_FUNCSIG;
-
-	int nInputBytes = 3 * m_Config.nControllers;
-	int nOutputBytes = 3 * m_Config.nControllers;
-	int nUARTBytes = 0;
-
-	int nConfigBytes = m_Config.nControllers * 7 + 2;
-	std::unique_ptr<byte[]> arrConfigBytes = std::make_unique<byte[]>(nConfigBytes);
-
-	arrConfigBytes[0] = (byte)(nConfigBytes - 2);
-	arrConfigBytes[1] = 0x81;
-
-	int iByte = 0;
-	for (int iController = 0; iController < m_Config.nControllers; iController++)
-	{
-		for (int p = 0; p < 24; p++)
-		{
-			int iPin = iController * 24 + p;
-			iByte = iPin / 4 + 2;
-
-			arrConfigBytes[iByte + iController] |= (byte)((m_Config.arrPins[iPin] << 6) >> ((iPin % 4) * 2));
-
-			if (m_Config.arrPins[iPin] == InputADC)
-				nInputBytes+=2;
-		}
-
-		byte nUARTBytesPerController = 0;
-		if (m_Config.arrArrows[iController] > 0)
-			nUARTBytesPerController += (byte)(m_Config.arrArrows[iController] * 3 + 1);
-
-		if (m_Config.arrTextDisplaySize[iController] > 0)
-			nUARTBytesPerController += (byte)(m_Config.arrTextDisplaySize[iController] * 2 + 6);
-
-		arrConfigBytes[iByte + iController + 1] = nUARTBytesPerController;
-		nUARTBytes += nUARTBytesPerController;
-	}
-
-	m_Data.nInputBytes = nInputBytes;
-	m_Data.nOutputBytes = nOutputBytes;
-	m_Data.nUARTBytes = nUARTBytes;
-
-	m_Data.arrInputBytes.reset(new byte[nInputBytes + 3]());
-	m_Data.arrOutputBytes.reset(new byte[nOutputBytes + 2]());
-	m_Data.arrUARTBytes.reset(new byte[nUARTBytes + 2]());
-
-	PRINT_MSG_DBG("m_Data.arrInputBytes.count = %d\n", nInputBytes + 3);
-	PRINT_MSG_DBG("m_Data.arrOutputBytes.count = %d\n", nOutputBytes + 2);
-	PRINT_MSG_DBG("m_Data.arrUARTBytes.count = %d\n", nUARTBytes + 2);
-
-	PRINT_MSG("Send configuration...\n");
-	int ttl = 20;
-	while (--ttl)
-	{
-		Sleep(100);
-
-		// Отправляем конфигурацию на контроллеры
-		WriteFile(m_hPort, arrConfigBytes.get(), nConfigBytes, nullptr, nullptr);
-
-		COMSTAT comstat;
-		DWORD errors;
-		comstat.cbInQue = 0;
-		ClearCommError(m_hPort, &errors, &comstat);
-
-		DWORD bytesToRead = comstat.cbInQue;
-		PRINT_MSG_DBG("ttl = %d, bytesToRead = %d\n", ttl,bytesToRead);
-		if (bytesToRead == 2)
-		{
-			byte buffACK[2]{};
-			ReadFile(m_hPort, &buffACK, bytesToRead, nullptr, nullptr);
-			
-
-			PRINT_MSG_DBG("buffACK = {0x%02X, 0x%02X};\n", buffACK[0], buffACK[1]);
-			if ((buffACK[0] == 0x01) && (buffACK[1] == 0x8F))
-			{
-				PurgeComm(m_hPort, PURGE_RXCLEAR | PURGE_TXCLEAR);
-				Sleep(100);
-				m_Connected = true;
-				return 0;
-			}
-		}
-	}
-	PRINT_MSG_ERROR("Couldn't configure controllers, exit.\n");
-
-	m_Signals.arrInput.release();
-	m_Signals.arrOutput.release();
-	m_Signals.arrADC.release();
-	m_Signals.arrArrow.release();
-	m_Signals.arr7SegDec.release();
-	m_Signals.arrTextDisplay.release();
-
-	m_Data.arrInputBytes.release();
-	m_Data.arrOutputBytes.release();
-	m_Data.arrUARTBytes.release();
-
-	DestroyHandle();
-	return 0x20;
-}
-
-void UARTFrontView717::ReadSignalsDevice()
-{
-	static byte cmdRead[]{0x00, 0x85};
-	WriteFile(m_hPort,&cmdRead, 2, nullptr, nullptr);
-
-	auto inBytes = m_Data.arrInputBytes.get();
-	ReadFile(m_hPort, inBytes, m_Data.nInputBytes + 3, nullptr, nullptr);
-	PurgeComm(m_hPort, PURGE_RXCLEAR);
-
-	if ((inBytes[0] != 0x0B) || (inBytes[1] != 0x0B) || (inBytes[2] != m_Data.nInputBytes))
-		return;
-
-	int i_Byte = 3;
-	int i_ADCSignals = 0;
-
-	for (int i_Controller = 0; i_Controller < m_Config.nControllers; i_Controller++)
-	{
-		if (m_Config.arrADCPerController[i_Controller] > 0)
-		{
-			for (int i_ADC = 0; i_ADC < m_Config.arrADCPerController[i_Controller]; i_ADC++)
-			{
-				m_Signals.arrADC[i_ADCSignals] = inBytes[i_Byte++] << 8;
-				m_Signals.arrADC[i_ADCSignals++] |= inBytes[i_Byte++];
-			}
-		}
-		
-		for (int i_Pin = 0; i_Pin < 24; i_Pin++)
-		{
-			int i_InputSignal = i_Controller * 24 + i_Pin;
-			m_Signals.arrInput[i_InputSignal] = ((inBytes[i_Byte] << (i_Pin % 8)) & 0x80) >> 7;
-			if (i_Pin == 7 || i_Pin == 15 || i_Pin == 23)
-				i_Byte++;
-		}
-	}
-	Sleep(m_sleepTimes.afterRead);
-}
-
-void UARTFrontView717::WriteSignalsDevice()
-{
-	auto outBytes = m_Data.arrOutputBytes.get();
-	outBytes[0] = (byte)m_Data.nOutputBytes;
-	outBytes[1] = 0x83;
-
-	for (int i_OutputSignals = 0; i_OutputSignals < m_Signals.nPins; i_OutputSignals++)
-	{
-		if ((i_OutputSignals % 8) == 0)
-			outBytes[(i_OutputSignals / 8) + 2] = 0;
-		outBytes[(i_OutputSignals / 8) + 2] |= (byte)(m_Signals.arrOutput[i_OutputSignals] << 7) >> (i_OutputSignals % 8);
-	}
-
-	int i_7SegDecSignals = 0;
-	for (int i_Controller = 0; i_Controller < m_Config.nControllers; i_Controller++)
-	{
-		for (int i_Port = 0; i_Port < 3; i_Port++)
-		{
-			if (m_Config.arr7SegDec[i_Controller].port[i_Port])
-			{
-				outBytes[i_Controller * 3 + i_Port + 2] = ConvertIntTo7DecSegByte(m_Signals.arr7SegDec[i_7SegDecSignals++]);
-			}
-		}
-	}
-
-	WriteFile(m_hPort, outBytes, m_Data.nOutputBytes + 2, nullptr, nullptr);
-	Sleep(m_sleepTimes.afterWriteSignals);
-}
-
-void UARTFrontView717::WriteUARTDevice()
-{
-	if (!m_Data.nUARTBytes)
-		return;
-
-	auto uartBytes = m_Data.arrUARTBytes.get();
-
-	uartBytes[0] = (byte)m_Data.nUARTBytes;
-	uartBytes[1] = 0x87;
-
-	int i_Byte = 2;
-	int i_Arrow = 0;
-	int i_TextDisplay = 0;
-	for (int i_Controller = 0; i_Controller < m_Config.nControllers; i_Controller++)
-	{
-		if (m_Config.arrArrows[i_Controller] > 0)
-		{
-			uartBytes[i_Byte++] = 0x41; // 'A' aka Arrows
-			for (int i = 0; i < m_Config.arrArrows[i_Controller]; i++)
-			{
-				uartBytes[i_Byte++] = (byte)(i + 1);
-				uartBytes[i_Byte++] = (byte)((m_Signals.arrArrow[i_Arrow] & 0xFF00) >> 8);
-				uartBytes[i_Byte++] = (byte)(m_Signals.arrArrow[i_Arrow++] & 0xFF);
-			}
-		}
-
-		if (m_Config.arrTextDisplaySize[i_Controller] > 0)
-		{
-			auto display = &m_Signals.arrTextDisplay[i_TextDisplay++];
-			uartBytes[i_Byte++] = 0x54; // 'T' aka Text
-			uartBytes[i_Byte++] = 0x42; // 'B' aka Begin
-			uartBytes[i_Byte++] = (byte)((display->ledOn << 4) | display->on);
-
-			int nTextByte = (m_Config.arrTextDisplaySize[i_Controller] * 2);
-			uartBytes[i_Byte++] = (byte)nTextByte;
-			for (int i_TextByte = 0; i_TextByte < nTextByte; i_TextByte++)
-			{
-				uartBytes[i_Byte++] = display->text[i_TextByte];
-			}
-
-			uartBytes[i_Byte++] = 0x54; // 'T' aka Text
-			uartBytes[i_Byte++] = 0x45; // 'E' aka End
-		}
-	}
-
-	WriteFile(m_hPort, uartBytes, m_Data.nUARTBytes + 2, nullptr, nullptr);
-	Sleep(m_sleepTimes.afterWriteUART);
-}
-
-void UARTFrontView717::WriteShutdownDevice()
-{
-	PRINT_FUNCSIG;
-
-	PRINT_MSG("Send shutdown data...\n");
-	// Отправка UART
-	if (m_Data.nUARTBytes > 0)
-	{
-		m_Data.arrUARTBytes[0] = (byte)m_Data.nUARTBytes;
-		m_Data.arrUARTBytes[1] = 0x87;
-
-		int iUARTByte = 2;
-		for (int c = 0; c < m_Config.nControllers; c++)
-		{
-			if (m_Config.arrArrows[c] > 0)
-			{
-				m_Data.arrUARTBytes[iUARTByte++] = 0x41; // 'A' aka Arrows
-				for (int i = 0; i < m_Config.arrArrows[c]; i++)
-				{
-					m_Data.arrUARTBytes[iUARTByte++] = (byte)(i + 1);
-					m_Data.arrUARTBytes[iUARTByte++] = 0x00;
-					m_Data.arrUARTBytes[iUARTByte++] = 0x00;
-				}
-			}
-
-			if (m_Config.arrTextDisplaySize[c] > 0)
-			{
-				m_Data.arrUARTBytes[iUARTByte++] = 0x54; // 'T' aka Text
-				m_Data.arrUARTBytes[iUARTByte++] = 0x42; // 'B' aka Begin
-
-				m_Data.arrUARTBytes[iUARTByte++] = 0x00; // Экран выключен
-				m_Data.arrUARTBytes[iUARTByte++] = (byte)(m_Config.arrTextDisplaySize[c] * 2);
-
-				for (int iTextByte = 0; iTextByte < (m_Config.arrTextDisplaySize[c] * 2); iTextByte++)
-				{
-					m_Data.arrUARTBytes[iUARTByte++] = 0x00;
-				}
-
-				m_Data.arrUARTBytes[iUARTByte++] = 0x54; // 'T' aka Text
-				m_Data.arrUARTBytes[iUARTByte++] = 0x45; // 'E' aka End
-			}
-		}
-
-		Sleep(500);
-		for (int i = 0; i < 5; i++)
-		{
-			WriteFile(m_hPort, m_Data.arrUARTBytes.get(), (DWORD)(m_Data.nUARTBytes + 2), nullptr, nullptr);
-			Sleep(100);
-		}
-	}
-
-	// Отправка сигналов
-	DWORD disableBytesSize = m_Config.nControllers * 7 + 2;
-	std::unique_ptr<byte[]> disableBytes = std::make_unique<byte[]>(disableBytesSize);
-	disableBytes[0] = (byte)(disableBytesSize - 2);
-	disableBytes[1] = 0x81;
-
-	Sleep(100);
-	WriteFile(m_hPort, disableBytes.get(), disableBytesSize, nullptr, nullptr);
+	PRINT_MSG_DBG("config.nControllers = %d\n", nControllers);
+	PRINT_MSG_DBG("m_Signals.arrInput:		size = %d\n", nPins);
+	PRINT_MSG_DBG("m_Signals.arrOutput		size = %d\n", nPins);
+	PRINT_MSG_DBG("m_Signals.arrADC			size = %d\n", nADC);
+	PRINT_MSG_DBG("m_Signals.arrArrow		size = %d\n", nArrows);
+	PRINT_MSG_DBG("m_Signals.arr7SegDec		size = %d\n", n7SegDec);
+	PRINT_MSG_DBG("m_Signals.arrTextDisplay size = %d\n", nTextDisplays);
 }
 
 void UARTFrontView717::DeviceThreadFunc()
@@ -1035,9 +709,11 @@ void UARTFrontView717::DeviceThreadFunc()
 	m_ThreadStop = false;
 	m_ThreadForceStop = false;
 
-	int setupResult = SetupDevice();
-	if (setupResult)
+	// Конфигурируем устройство
+	int setupResult = m_UnivConv->Setup();
+	if (setupResult != CUnivCon::E_SUCCESS)
 	{
+		PRINT_MSG("Configuration failed (0x%02X)\n", setupResult);
 		m_ThreadStop = true;
 		m_ThreadForceStop = true;
 	}
@@ -1048,21 +724,23 @@ void UARTFrontView717::DeviceThreadFunc()
 
 	while (!m_ThreadStop)
 	{
-		// Входные сигналы
-		ReadSignalsDevice();
+		// Входящие сигналы
+		m_UnivConv->ReadSignals(m_Signals);
 		DataExchangeInputs();
-
-		// Выходные сигналы
+		Sleep(m_sleepTimes.afterRead);
+		
+		// Исходящие сигналы
 		DataExchangeOutputs();
-		WriteSignalsDevice();
-		WriteUARTDevice();
+		m_UnivConv->WriteSignals(m_Signals);
+		Sleep(m_sleepTimes.afterWriteSignals);
+		m_UnivConv->WriteUARTData(m_Signals);
+		Sleep(m_sleepTimes.afterWriteUART);
+
 		Sleep(m_sleepTimes.afterAll);
 	}
 
 	if (!m_ThreadForceStop)
-		WriteShutdownDevice();
-
-	DestroyHandle();
+		m_UnivConv->Stop();
 
 	m_NW2VarTableInput.VarTable.clear();
 	m_NW2VarTableOutput.VarTable.clear();
@@ -1350,21 +1028,6 @@ void UARTFrontView717::DataExchangeOutputs()
 	LeaveCriticalSection(&m_CriticalSection);
 }
 
-void UARTFrontView717::DestroyHandle()
-{
-	PRINT_FUNCSIG;
-
-	PRINT_MSG_DBG("Destroy handle\n");
-
-	if (m_hPort != INVALID_HANDLE_VALUE)
-		PurgeComm(m_hPort, PURGE_TXCLEAR | PURGE_RXCLEAR);
-
-	CloseHandle(m_hPort);
-	m_PortNumber = -1;
-	m_Connected = false;
-	m_hPort = INVALID_HANDLE_VALUE;
-}
-
 bool UARTFrontView717::CreateCalibrationsFile()
 {
 	auto hFile = CreateFile(CALIBRATIONS_FILE, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -1581,16 +1244,3 @@ void UARTFrontView717::ReadBattVoltmerCalibrations()
 	m_BattVoltmeterCalib.m_Max = GetPrivateProfileInt("BattVoltmeter", "Max", 150, CALIBRATIONS_FILE);
 }
 
-static byte byte7DecSeg[] = { 0x00,0x08,0x01,0x09,0x02,0x0A,0x03,0x0B,0x04,0x0C };
-byte UARTFrontView717::ConvertIntTo7DecSegByte(int number)
-{
-	if (number == -1)
-		return 0xFF;
-
-	number = number % 100;
-
-	int number1 = number % 10;
-	int number10 = (number - number1) / 10;
-
-	return (byte7DecSeg[number10] | (byte7DecSeg[number1] << 4));
-}

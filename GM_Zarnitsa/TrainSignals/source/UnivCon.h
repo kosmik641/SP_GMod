@@ -87,6 +87,8 @@ public:
 
     virtual bool IsConnected();
     virtual int GetPortNumber();
+
+    static byte ConvertIntTo7DecSegByte(int number);
 protected:
     HANDLE m_hPort = INVALID_HANDLE_VALUE;
     bool m_Connected = false;
@@ -105,7 +107,5 @@ protected:
     virtual ErrorCode OpenCOMPort(int port) = 0;
     virtual ErrorCode WriteConfiguration(const byte* configData, int size) = 0;
     virtual void DestroyHandle();
-
-    static byte ConvertIntTo7DecSegByte(int number);
 };
 

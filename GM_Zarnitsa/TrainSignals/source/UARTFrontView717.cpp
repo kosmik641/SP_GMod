@@ -127,6 +127,7 @@ void UARTFrontView717::LoadCalibartions()
 
 	ReadStopcraneCalibrations();
 	ReadKM013Calibrations();
+	ReadControllerCalibrations();
 
 	ReadTCCalibrations();
 	ReadNMCalibrations();
@@ -147,6 +148,15 @@ void UARTFrontView717::LoadCalibartions()
 	PRINT_MSG_DBG("    Pos5 = %d\n", m_KM013Calib.m_Pos5);
 	PRINT_MSG_DBG("    Pos6 = %d\n", m_KM013Calib.m_Pos6);
 	PRINT_MSG_DBG("    Pos7 = %d\n", m_KM013Calib.m_Pos7);
+
+	PRINT_MSG_DBG("Controller:\n");
+	PRINT_MSG_DBG("    PosX3  = %d\n", m_ControllerCalib.m_PosX3);
+	PRINT_MSG_DBG("    PosX2  = %d\n", m_ControllerCalib.m_PosX2);
+	PRINT_MSG_DBG("    PosX1  = %d\n", m_ControllerCalib.m_PosX1);
+	PRINT_MSG_DBG("    Pos0   = %d\n", m_ControllerCalib.m_Pos0);
+	PRINT_MSG_DBG("    PosT1  = %d\n", m_ControllerCalib.m_PosT1);
+	PRINT_MSG_DBG("    PosT1a = %d\n", m_ControllerCalib.m_PosT1a);
+	PRINT_MSG_DBG("    PosT2  = %d\n", m_ControllerCalib.m_PosT2);
 
 	PRINT_MSG_DBG("TC:\n");
 	PRINT_MSG_DBG("    Min = %d\n", m_TCCalib.m_Min);
@@ -341,199 +351,174 @@ void UARTFrontView717::DataExchangeInputs()
 	EnterCriticalSection(&m_CriticalSection);
 
 	auto& inTable = m_NW2VarTableInput.VarTable;
-	inTable["R_UNch"].val = m_Signals.arrInput[8];
-	inTable["R_ZS"].val = m_Signals.arrInput[9];
-	inTable["R_G"].val = m_Signals.arrInput[10];
-	inTable["R_Radio"].val = m_Signals.arrInput[11];
-	inTable["R_Program2"].val = m_Signals.arrInput[12];
-	inTable["R_Program1"].val = m_Signals.arrInput[13];
-	inTable["VUD1"].val = m_Signals.arrInput[14];
-	inTable["R_VPR"].val = m_Signals.arrInput[15];
-	inTable["VMK"].val = m_Signals.arrInput[16];
-	inTable["BPSNon"].val = m_Signals.arrInput[17];
-	//inTable["L_Emer"].val = m_Signals.arrInput[18]; // Not implemented
-	inTable["RezMK"].val = m_Signals.arrInput[19];
-	inTable["ARS13"].val = m_Signals.arrInput[20];
-	inTable["R_ASNPUp"].val = m_Signals.arrInput[21];
-	inTable["R_ASNPDown"].val = m_Signals.arrInput[22];
-	inTable["R_ASNPMenu"].val = m_Signals.arrInput[23];
+	inTable["A17"].val = m_Signals.arrInput[0];
+	inTable["A11"].val = m_Signals.arrInput[1];
+	inTable["A26"].val = m_Signals.arrInput[2];
+	inTable["A44"].val = m_Signals.arrInput[3];
+	inTable["AS1"].val = m_Signals.arrInput[4];
+	inTable["AR63"].val = m_Signals.arrInput[5];
+	inTable["A49"].val = m_Signals.arrInput[6];
+	inTable["A21"].val = m_Signals.arrInput[7];
 
-	static int controllerPos = 0;
-	int controllerPosBit =
-		(m_Signals.arrInput[25] << 4) | 
-		(m_Signals.arrInput[27] << 3) | 
-		(m_Signals.arrInput[29] << 2) | 
-		(m_Signals.arrInput[30] << 1) | 
-		(m_Signals.arrInput[31]);
+	inTable["A10"].val = m_Signals.arrInput[16];
+	inTable["A27"].val = m_Signals.arrInput[17];
+	inTable["A54"].val = m_Signals.arrInput[18];
+	inTable["A53"].val = m_Signals.arrInput[19];
+	inTable["A76"].val = m_Signals.arrInput[20];
+	inTable["A84"].val = m_Signals.arrInput[21];
+	inTable["AV1"].val = m_Signals.arrInput[22];
+	inTable["A48"].val = m_Signals.arrInput[23];
 
-	switch (controllerPosBit)
-	{
-	case 0x05:
-		controllerPos = 857; // Х3
-		break;
-	case 0x04:
-		controllerPos = 714; // Х2
-		break;
-	case 0x00:
-		controllerPos = 571; // Х1
-		break;
-	case 0x08:
-		controllerPos = 429; // 0
-		break;
-	case 0x02:
-		controllerPos =	286; // Т1
-		break;
-	case 0x06:
-		controllerPos = 143; // Т1А
-		break;
-	case 0x16:
-		controllerPos = 0; // Т2
-		break;
-	default:
-		break;
-	}
+	inTable["A46"].val = m_Signals.arrInput[32];
+	inTable["A29"].val = m_Signals.arrInput[33];
+	//inTable["A79"].val = m_Signals.arrInput[34]; // Not implemented
+	inTable["A47"].val = m_Signals.arrInput[35];
+	inTable["A74"].val = m_Signals.arrInput[36];
+	inTable["A42"].val = m_Signals.arrInput[37];
+	inTable["A71"].val = m_Signals.arrInput[38];
+	inTable["A73"].val = m_Signals.arrInput[39];
 
-	inTable["ReverserPosition"].val = m_Signals.arrInput[26] ? (m_Signals.arrInput[28] ? 0 : 2) : 1; // 0 - Назад, 2 - Вперед
-	inTable["ControllerPosition"].val = controllerPos;
+	inTable["A45"].val = m_Signals.arrInput[48];
+	inTable["A41"].val = m_Signals.arrInput[49];
+	//inTable["A77"].val = m_Signals.arrInput[50]; // Not implemented
+	inTable["A75"].val = m_Signals.arrInput[51];
+	inTable["A43"].val = m_Signals.arrInput[52];
+	//inTable["A78"].val = m_Signals.arrInput[53]; // Not implemented
+	inTable["A32"].val = m_Signals.arrInput[54];
+	inTable["A31"].val = m_Signals.arrInput[55];
 
-	inTable["ARS"].val = m_Signals.arrInput[32];
-	inTable["ALS"].val = m_Signals.arrInput[33];
-	inTable["ARSR"].val = m_Signals.arrInput[34];
-	inTable["ALSFreq"].val = m_Signals.arrInput[35];
-	inTable["L_1"].val = m_Signals.arrInput[36];
-	inTable["L_2"].val = m_Signals.arrInput[37];
-	inTable["L_3"].val = m_Signals.arrInput[38];
-	inTable["VP"].val = m_Signals.arrInput[39];
-	inTable["KRZD"].val = m_Signals.arrInput[40];
-	inTable["VozvratRP"].val = m_Signals.arrInput[41];
-	inTable["KDL"].val = m_Signals.arrInput[42];
-	inTable["KDLR"].val = m_Signals.arrInput[43];
-	inTable["DoorSelect"].val = m_Signals.arrInput[44];
-	inTable["KVT"].val = m_Signals.arrInput[45];
-	inTable["KVTR"].val = m_Signals.arrInput[46];
-	inTable["OtklAVU"].val = m_Signals.arrInput[47];
-	inTable["V11"].val = m_Signals.arrInput[48];
-	inTable["V13"].val = m_Signals.arrInput[49];
-	inTable["V12"].val = m_Signals.arrInput[50];
-	inTable["ConverterProtection"].val = m_Signals.arrInput[51];
-	inTable["KSN"].val = m_Signals.arrInput[52];
-	inTable["Ring"].val = m_Signals.arrInput[53];
-	inTable["OtklBV"].val = m_Signals.arrInput[54];
-	inTable["VZ1"].val = m_Signals.arrInput[55];
-	inTable["KRP"].val = m_Signals.arrInput[56];
-	inTable["KAH"].val = m_Signals.arrInput[57];
-	inTable["L_4"].val = m_Signals.arrInput[58];
-	inTable["VUS"].val = m_Signals.arrInput[59];
-	inTable["VAD"].val = m_Signals.arrInput[60];
-	inTable["VAH"].val = m_Signals.arrInput[61];
-	inTable["VKST"].val = m_Signals.arrInput[62];
-	inTable["KDP"].val = m_Signals.arrInput[63];
+	inTable["A1"].val = m_Signals.arrInput[64];
+	inTable["A13"].val = m_Signals.arrInput[65];
+	inTable["A25"].val = m_Signals.arrInput[66];
+	inTable["A20"].val = m_Signals.arrInput[67];
+	inTable["A56"].val = m_Signals.arrInput[68];
+	inTable["A30"].val = m_Signals.arrInput[69];
+	inTable["A65"].val = m_Signals.arrInput[71];
 
-	inTable["KRUPosition"].val = m_Signals.arrInput[64] + m_Signals.arrInput[65];
+	inTable["A3"].val = m_Signals.arrInput[80];
+	inTable["A2"].val = m_Signals.arrInput[81];
+	inTable["A5"].val = m_Signals.arrInput[82];
+	inTable["A4"].val = m_Signals.arrInput[83];
+	inTable["A70"].val = m_Signals.arrInput[84];
+	inTable["A6"].val = m_Signals.arrInput[85];
+	inTable["A39"].val = m_Signals.arrInput[86];
+	inTable["A14"].val = m_Signals.arrInput[87];
 
-	inTable["IGLA1"].val = m_Signals.arrInput[67];
-	inTable["IGLA2"].val = m_Signals.arrInput[68];
-	inTable["IGLA3"].val = m_Signals.arrInput[69];
-	inTable["IGLA4"].val = m_Signals.arrInput[70];
+	inTable["A38"].val = m_Signals.arrInput[96];
+	inTable["A28"].val = m_Signals.arrInput[97];
+	inTable["A8"].val = m_Signals.arrInput[98];
+	inTable["A22"].val = m_Signals.arrInput[99];
+	inTable["A16"].val = m_Signals.arrInput[100];
+	inTable["A12"].val = m_Signals.arrInput[101];
+	inTable["A51"].val = m_Signals.arrInput[102];
+	inTable["A37"].val = m_Signals.arrInput[103];
 
-	inTable["VUD2"].val = m_Signals.arrInput[72];
-	inTable["VDL"].val = m_Signals.arrInput[73];
-	inTable["R_Program1H"].val = m_Signals.arrInput[74];
-	inTable["R_Program2H"].val = m_Signals.arrInput[75];
-	inTable["PB"].val = m_Signals.arrInput[76];
-	inTable["HornState"].val = m_Signals.arrInput[77];
+	inTable["A19"].val = m_Signals.arrInput[112];
+	inTable["A24"].val = m_Signals.arrInput[113];
+	inTable["A18"].val = m_Signals.arrInput[114];
+	inTable["A66"].val = m_Signals.arrInput[115];
+	inTable["A80"].val = m_Signals.arrInput[116];
+	inTable["A40"].val = m_Signals.arrInput[117];
+	inTable["A52"].val = m_Signals.arrInput[118];
+	inTable["A50"].val = m_Signals.arrInput[119];
 
-	//inTable["UAVA"].val = (m_Signals.arrInput[90] == 0);
+	inTable["AV3"].val = m_Signals.arrInput[128];
+	inTable["AIS"].val = m_Signals.arrInput[129];
+	//inTable["A83"].val = m_Signals.arrInput[130]; // Not implemented
+	inTable["AV6"].val = m_Signals.arrInput[131];
+	inTable["A15"].val = m_Signals.arrInput[132];
+	//inTable["A82"].val = m_Signals.arrInput[133]; // Not implemented
+	inTable["A81"].val = m_Signals.arrInput[134];
+	inTable["A57"].val = m_Signals.arrInput[135];
 
-	inTable["RC1"].val = m_Signals.arrInput[96];
-	inTable["VB"].val = m_Signals.arrInput[97];
-	inTable["UOS"].val = m_Signals.arrInput[98];
+	inTable["A9"].val = m_Signals.arrInput[144];
+	inTable["A7"].val = m_Signals.arrInput[145];
+	inTable["A72"].val = m_Signals.arrInput[146];
+	inTable["A68"].val = m_Signals.arrInput[147];
 
-	inTable["DriverValveDisconnect"].val = (m_Signals.arrInput[104] == 0);
-	inTable["ParkingBrake"].val = (m_Signals.arrInput[105] == 0);
-	inTable["EPK"].val = (m_Signals.arrInput[106] == 0);
+	inTable["RC1"].val = m_Signals.arrInput[160];
+	inTable["VB"].val = m_Signals.arrInput[161];
+	inTable["UOS"].val = m_Signals.arrInput[165];
+	//inTable["UAVA"].val = m_Signals.arrInput[167];
 
-	inTable["A54"].val = m_Signals.arrInput[112];
-	inTable["A84"].val = m_Signals.arrInput[113];
-	inTable["A10"].val = m_Signals.arrInput[114];
-	inTable["A53"].val = m_Signals.arrInput[115];
-	inTable["A49"].val = m_Signals.arrInput[116];
-	inTable["A27"].val = m_Signals.arrInput[117];
-	inTable["AS1"].val = m_Signals.arrInput[118];
-	inTable["A21"].val = m_Signals.arrInput[119];
-	inTable["A26"].val = m_Signals.arrInput[120];
-	inTable["AR63"].val= m_Signals.arrInput[121];
-	inTable["A17"].val = m_Signals.arrInput[122];
-	inTable["A44"].val = m_Signals.arrInput[123];
-	inTable["A45"].val = m_Signals.arrInput[124];
-	inTable["A11"].val = m_Signals.arrInput[125];
-	inTable["A71"].val = m_Signals.arrInput[126];
-	inTable["A41"].val = m_Signals.arrInput[127];
-	inTable["A74"].val = m_Signals.arrInput[128];
-	inTable["A73"].val = m_Signals.arrInput[129];
-	//inTable["A79"].val = m_Signals.arrInput[130]; // Not implemented
-	inTable["A42"].val = m_Signals.arrInput[131];
-	inTable["A46"].val = m_Signals.arrInput[132];
-	inTable["A47"].val = m_Signals.arrInput[133];
-	inTable["AV1"].val = m_Signals.arrInput[134];
-	inTable["A29"].val = m_Signals.arrInput[135];
-	inTable["A76"].val = m_Signals.arrInput[136];
-	inTable["A48"].val = m_Signals.arrInput[137];
-	inTable["A56"].val = m_Signals.arrInput[138];
-	inTable["A65"].val = m_Signals.arrInput[139];
-	inTable["A25"].val = m_Signals.arrInput[140];
-	inTable["A30"].val = m_Signals.arrInput[141];
-	inTable["A1"].val  = m_Signals.arrInput[142];
-	inTable["A20"].val = m_Signals.arrInput[143];
-	inTable["A32"].val = m_Signals.arrInput[144];
-	inTable["A13"].val = m_Signals.arrInput[145];
-	inTable["A43"].val = m_Signals.arrInput[146];
-	inTable["A31"].val = m_Signals.arrInput[147];
-	//inTable["A77"].val = m_Signals.arrInput[148]; // Not implemented
-	//inTable["A78"].val = m_Signals.arrInput[149]; // Not implemented
-	inTable["VBD"].val = m_Signals.arrInput[150];
-	inTable["A75"].val = m_Signals.arrInput[151];
+	inTable["VMK"].val = m_Signals.arrInput[168];
+	inTable["BPSNon"].val = m_Signals.arrInput[169];
+	//inTable["L_Emer"].val = m_Signals.arrInput[170]; // Not implemented
+	inTable["RezMK"].val = m_Signals.arrInput[174];
+	inTable["ARS13"].val = m_Signals.arrInput[175];
 
-	inTable["A22"].val = m_Signals.arrInput[152];
-	inTable["A8"].val  = m_Signals.arrInput[153];
-	inTable["A28"].val = m_Signals.arrInput[154];
-	inTable["A38"].val = m_Signals.arrInput[155];
-	inTable["A14"].val = m_Signals.arrInput[156];
-	inTable["A39"].val = m_Signals.arrInput[157];
-	inTable["A6"].val  = m_Signals.arrInput[158];
-	inTable["A70"].val = m_Signals.arrInput[159];
-	inTable["A4"].val  = m_Signals.arrInput[160];
-	inTable["A5"].val  = m_Signals.arrInput[161];
-	inTable["A2"].val  = m_Signals.arrInput[162];
-	inTable["A3"].val  = m_Signals.arrInput[163];
-	inTable["A50"].val = m_Signals.arrInput[164];
-	inTable["A52"].val = m_Signals.arrInput[165];
-	inTable["A40"].val = m_Signals.arrInput[166];
-	inTable["A80"].val = m_Signals.arrInput[167];
-	inTable["A66"].val = m_Signals.arrInput[168];
-	inTable["A18"].val = m_Signals.arrInput[169];
-	inTable["A24"].val = m_Signals.arrInput[170];
-	inTable["A19"].val = m_Signals.arrInput[171];
-	inTable["A37"].val = m_Signals.arrInput[172];
-	inTable["A51"].val = m_Signals.arrInput[173];
-	inTable["A12"].val = m_Signals.arrInput[174];
-	inTable["A16"].val = m_Signals.arrInput[175];
-	inTable["A68"].val = m_Signals.arrInput[176];
-	inTable["A72"].val = m_Signals.arrInput[177];
-	inTable["A7"].val  = m_Signals.arrInput[178];
-	inTable["A9"].val  = m_Signals.arrInput[179];
-	inTable["A57"].val = m_Signals.arrInput[180];
-	inTable["A81"].val = m_Signals.arrInput[181];
-	//inTable["A82"].val = m_Signals.arrInput[182]; // Not implemented
-	inTable["A15"].val = m_Signals.arrInput[183];
-	inTable["AV6"].val = m_Signals.arrInput[184];
-	//inTable["A83"].val = m_Signals.arrInput[185]; // Not implemented
-	inTable["AIS"].val = m_Signals.arrInput[186];
-	inTable["AV3"].val = m_Signals.arrInput[187];
-	//inTable["UPPS_On"].val = m_Signals.arrInput[188]; // TODO
+	inTable["R_UNch"].val = m_Signals.arrInput[176];
+	inTable["R_ZS"].val = m_Signals.arrInput[177];
+	inTable["R_G"].val = m_Signals.arrInput[178];
+	inTable["R_Radio"].val = m_Signals.arrInput[179];
+	inTable["R_Program1"].val = m_Signals.arrInput[180];
+	inTable["R_Program2"].val = m_Signals.arrInput[181];
+	inTable["VUD1"].val = m_Signals.arrInput[182];
+	inTable["R_VPR"].val = m_Signals.arrInput[183];
+
+	inTable["KRZD"].val = m_Signals.arrInput[184];
+	inTable["VozvratRP"].val = m_Signals.arrInput[185];
+	inTable["KDL"].val = m_Signals.arrInput[186];
+	inTable["KDLR"].val = m_Signals.arrInput[187];
+	inTable["DoorSelect"].val = m_Signals.arrInput[188];
+
+	inTable["KVT"].val = m_Signals.arrInput[192];
+	inTable["KVTR"].val = m_Signals.arrInput[193];
+	inTable["VZ1"].val = m_Signals.arrInput[194];
+	inTable["V13"].val = m_Signals.arrInput[195];
+	inTable["OtklAVU"].val = m_Signals.arrInput[196];
+	inTable["OtklBV"].val = m_Signals.arrInput[197];
+	inTable["V11"].val = m_Signals.arrInput[198];
+	inTable["V12"].val = m_Signals.arrInput[199];
+
+	inTable["ARS"].val = m_Signals.arrInput[200];
+	inTable["ALS"].val = m_Signals.arrInput[201];
+	inTable["ARSR"].val = m_Signals.arrInput[202];
+	inTable["ConverterProtection"].val = m_Signals.arrInput[203];
+	inTable["KSN"].val = m_Signals.arrInput[204];
+	inTable["Ring"].val = m_Signals.arrInput[205];
+	inTable["OVT"].val = m_Signals.arrInput[206];
+
+	inTable["ALSFreq"].val = m_Signals.arrInput[208];
+	inTable["L_1"].val = m_Signals.arrInput[209];
+	inTable["L_2"].val = m_Signals.arrInput[210];
+	inTable["L_3"].val = m_Signals.arrInput[211];
+	inTable["VP"].val = m_Signals.arrInput[212];
+	inTable["KRUPosition"].val = m_Signals.arrInput[213] + m_Signals.arrInput[214]; // FIXME?
+
+	inTable["KRP"].val = m_Signals.arrInput[216];
+	inTable["KAH"].val = m_Signals.arrInput[217];
+	inTable["KDP"].val = m_Signals.arrInput[218];
+	inTable["L_4"].val = m_Signals.arrInput[219];
+	inTable["VUS"].val = m_Signals.arrInput[220];
+	inTable["VAD"].val = m_Signals.arrInput[221];
+	inTable["VAH"].val = m_Signals.arrInput[222];
+	inTable["HornState"].val = m_Signals.arrInput[223];
+
+	inTable["R_ASNPDown"].val = m_Signals.arrInput[233];
+	inTable["R_ASNPMenu"].val = m_Signals.arrInput[234];
+	inTable["R_ASNPUp"].val = m_Signals.arrInput[235];
+
+	inTable["ReverserPosition"].val = m_Signals.arrInput[242] ? 0 : (m_Signals.arrInput[243] ? 2 : 1); // 0 - Назад, 2 - Вперед
+	inTable["PB"].val = m_Signals.arrInput[244];
+
+	inTable["IGLA1"].val = m_Signals.arrInput[248];
+	//inTable["IGLA2"].val = m_Signals.arrInput[]; // No button
+	//inTable["IGLA3"].val = m_Signals.arrInput[]; // No button
+	inTable["IGLA4"].val = m_Signals.arrInput[249];
+
+	inTable["DriverValveDisconnect"].val = m_Signals.arrInput[291];
+	inTable["ParkingBrake"].val = m_Signals.arrInput[292];
+	inTable["EPK"].val = m_Signals.arrInput[293];
+
+	inTable["VUD2"].val = m_Signals.arrInput[302];
+	inTable["R_Program1H"].val = m_Signals.arrInput[303];
+	inTable["VDL"].val = m_Signals.arrInput[310];
+	inTable["R_Program2H"].val = m_Signals.arrInput[311];
 
 	inTable["EmergencyBrakeValve"].val = !ADCStopcrane(m_Signals.arrADC[0]);
-	inTable["CranePosition"].val = ADCKM013(m_Signals.arrADC[1]) * 1000;
+	inTable["CranePosition"].val =  ADCKM013(m_Signals.arrADC[1]) * 1000;
+	inTable["ControllerPosition"].val = ADCController(m_Signals.arrADC[2]);
 
 	LeaveCriticalSection(&m_CriticalSection);
 }
@@ -544,58 +529,68 @@ void UARTFrontView717::DataExchangeOutputs()
 
 	// Индикация
 	auto& outTable = m_NW2VarTableOutput.VarTable;
-	m_Signals.arrOutput[200] = outTable["AR04"].val;
-	m_Signals.arrOutput[201] = outTable["AR0"].val;
-	m_Signals.arrOutput[202] = outTable["AR40"].val;
-	m_Signals.arrOutput[203] = outTable["AR60"].val;
-	m_Signals.arrOutput[204] = outTable["AR70"].val;
-	m_Signals.arrOutput[205] = outTable["AR80"].val;
-	m_Signals.arrOutput[206] = outTable["SD"].val;
+	m_Signals.arrOutput[171] = outTable["VD"].val;
+	m_Signals.arrOutput[172] = outTable["KT"].val;
+	m_Signals.arrOutput[173] = outTable["ST"].val;
 
-	m_Signals.arrOutput[208] = outTable["HRK"].val;
-	m_Signals.arrOutput[209] = outTable["RP"].val;
-	m_Signals.arrOutput[210] = outTable["SN"].val;
-	m_Signals.arrOutput[211] = outTable["GLIB"].val;
-	m_Signals.arrOutput[212] = outTable["KVC"].val;
-	m_Signals.arrOutput[213] = outTable["LN"].val;
-	m_Signals.arrOutput[214] = outTable["RS"].val;
-	m_Signals.arrOutput[215] = outTable["KVD"].val;
+	m_Signals.arrOutput[252] = outTable["IGLA:Error"].val;
+	m_Signals.arrOutput[254] = outTable["IGLA:Fire"].val;
 
-	m_Signals.arrOutput[219] = outTable["VD"].val;
-	m_Signals.arrOutput[220] = outTable["KT"].val;
-	m_Signals.arrOutput[221] = outTable["ST"].val;
+	// Конфигурация с 7SegDec работает неправильно (?)
+	int speed = outTable["LUDS"].val ? int(m_NW2VarTableOutput.GetPackedRatio("Speed") * 100.0f) : -1;
+	byte speedVal = CUnivCon::ConvertIntTo7DecSegByte(speed);
+	m_Signals.arrOutput[256] = (speedVal & 0x01) > 0;
+	m_Signals.arrOutput[257] = (speedVal & 0x02) > 0;
+	m_Signals.arrOutput[258] = (speedVal & 0x04) > 0;
+	m_Signals.arrOutput[259] = (speedVal & 0x08) > 0;
+	m_Signals.arrOutput[260] = (speedVal & 0x10) > 0;
+	m_Signals.arrOutput[261] = (speedVal & 0x20) > 0;
+	m_Signals.arrOutput[262] = (speedVal & 0x40) > 0;
+	m_Signals.arrOutput[263] = (speedVal & 0x80) > 0;
+
+	m_Signals.arrOutput[264] = outTable["AR04"].val;
+	m_Signals.arrOutput[265] = outTable["AR0"].val;
+	m_Signals.arrOutput[266] = outTable["AR40"].val;
+	m_Signals.arrOutput[267] = outTable["AR60"].val;
+	m_Signals.arrOutput[268] = outTable["AR70"].val;
+	m_Signals.arrOutput[269] = outTable["AR80"].val;
+	m_Signals.arrOutput[270] = outTable["SD"].val;
 	
-	m_Signals.arrOutput[227] = outTable["DoorsLeftL"].val;
-	m_Signals.arrOutput[228] = outTable["DoorsLeftL"].val;
-	m_Signals.arrOutput[229] = outTable["GreenRP"].val;
-	m_Signals.arrOutput[230] = outTable["RZP"].val;
-	m_Signals.arrOutput[231] = outTable["L1"].val;
-	m_Signals.arrOutput[232] = outTable["RZP"].val;
-	m_Signals.arrOutput[233] = outTable["AVU"].val;
-	m_Signals.arrOutput[234] = outTable["LKVP"].val;
-	m_Signals.arrOutput[235] = outTable["PN"].val;
-	m_Signals.arrOutput[236] = outTable["ISTLamp"].val;
-	m_Signals.arrOutput[237] = outTable["DoorsRightL"].val;
+	m_Signals.arrOutput[272] = outTable["HRK"].val;
+	m_Signals.arrOutput[273] = outTable["RP"].val;
+	m_Signals.arrOutput[274] = outTable["SN"].val;
+	m_Signals.arrOutput[275] = outTable["GLIB"].val;
+	m_Signals.arrOutput[276] = outTable["KVC"].val;
+	m_Signals.arrOutput[277] = outTable["LN"].val;
+	m_Signals.arrOutput[278] = outTable["RS"].val;
+	m_Signals.arrOutput[279] = outTable["KVD"].val;
 
-	m_Signals.arrOutput[282] = outTable["IGLA:ButtonL4"].val;
-	m_Signals.arrOutput[283] = outTable["IGLA:ButtonL3"].val;
-	m_Signals.arrOutput[284] = outTable["IGLA:ButtonL2"].val;
-	m_Signals.arrOutput[285] = outTable["IGLA:ButtonL1"].val;
-	m_Signals.arrOutput[286] = outTable["IGLA:Error"].val;
-	m_Signals.arrOutput[287] = outTable["IGLA:Fire"].val;
+	m_Signals.arrOutput[280] = outTable["GreenRP"].val;
+	m_Signals.arrOutput[281] = outTable["DoorsLeftL"].val;
+	m_Signals.arrOutput[282] = outTable["DoorsLeftL"].val;
+	m_Signals.arrOutput[283] = outTable["L1"].val;
+	m_Signals.arrOutput[284] = outTable["LSP"].val;
+	m_Signals.arrOutput[285] = outTable["AVU"].val;
+	m_Signals.arrOutput[286] = outTable["LKVP"].val;
+	m_Signals.arrOutput[287] = outTable["RZP"].val;
+
+	m_Signals.arrOutput[288] = outTable["PN"].val;
+	m_Signals.arrOutput[289] = outTable["DoorsRightL"].val;
+	m_Signals.arrOutput[290] = outTable["BrW"].val;
 
 	// Стрелочная индикация
-	m_Signals.arrArrow[0] = StepTC(m_NW2VarTableOutput.GetPackedRatio("BCPressure"));
+	m_Signals.arrArrow[0] = StepBattVoltmeter(m_NW2VarTableOutput.GetPackedRatio("BatteryVoltage"));
 	m_Signals.arrArrow[1] = StepNM(m_NW2VarTableOutput.GetPackedRatio("TLPressure"));
 	m_Signals.arrArrow[2] = StepTM(m_NW2VarTableOutput.GetPackedRatio("BLPressure"));
-	m_Signals.arrArrow[3] = StepAmmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesCurrent"));
+	m_Signals.arrArrow[3] = StepTC(m_NW2VarTableOutput.GetPackedRatio("BCPressure"));
 	m_Signals.arrArrow[4] = StepKiloVoltmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesVoltage"));
-	m_Signals.arrArrow[5] = StepBattVoltmeter(m_NW2VarTableOutput.GetPackedRatio("BatteryVoltage"));
-
-	// Скоростемер
-	m_Signals.arr7SegDec[0] = outTable["LUDS"].val ? int(m_NW2VarTableOutput.GetPackedRatio("Speed") * 100.0f) : -1;
+	m_Signals.arrArrow[5] = StepAmmeter(m_NW2VarTableOutput.GetPackedRatio("EnginesCurrent"));
 
 	// Дисплеи
+	// АСНП
+	m_Signals.arrTextDisplay[0].on = m_Signals.arrTextDisplay[0].ledOn = (outTable["ASNP:State"].val != 0);
+	convertUtf8ToCp1251(m_ASNPText.c_str(), m_Signals.arrTextDisplay[0].text, 48);
+
 	// АСОТП
 	int asotpState = outTable["IGLA:State"].val;
 
@@ -605,12 +600,8 @@ void UARTFrontView717::DataExchangeOutputs()
 	else 
 		asotpDisplayOn = (asotpState != -2);
 
-	m_Signals.arrTextDisplay[0].on = m_Signals.arrTextDisplay[0].ledOn = asotpDisplayOn;
-	convertUtf8ToCp1251(m_ASOTPText.c_str(), m_Signals.arrTextDisplay[0].text, 40);
-	
-	// АСНП
-	m_Signals.arrTextDisplay[1].on = m_Signals.arrTextDisplay[1].ledOn = (outTable["ASNP:State"].val != 0);
-	convertUtf8ToCp1251(m_ASNPText.c_str(), m_Signals.arrTextDisplay[1].text, 48);
+	m_Signals.arrTextDisplay[1].on = m_Signals.arrTextDisplay[1].ledOn = asotpDisplayOn;
+	convertUtf8ToCp1251(m_ASOTPText.c_str(), m_Signals.arrTextDisplay[1].text, 40);
 
 	LeaveCriticalSection(&m_CriticalSection);
 }
@@ -666,6 +657,36 @@ int UARTFrontView717::ADCKM013(int adc)
 		retVal = 6;
 	else if (adc > (pos_6 + pos_7) / 2)
 		retVal = 7;
+
+	return retVal;
+}
+
+int UARTFrontView717::ADCController(int adc)
+{
+	int retVal = 429;
+
+	int pos_1 = m_ControllerCalib.m_PosT2;
+	int pos_2 = m_ControllerCalib.m_PosT1a;
+	int pos_3 = m_ControllerCalib.m_PosT1;
+	int pos_4 = m_ControllerCalib.m_Pos0;
+	int pos_5 = m_ControllerCalib.m_PosX1;
+	int pos_6 = m_ControllerCalib.m_PosX2;
+	int pos_7 = m_ControllerCalib.m_PosX3;
+
+	if (adc <= (pos_1 + pos_2) / 2)
+		retVal = 0; // T2
+	else if (adc > (pos_1 + pos_2) / 2 && adc <= (pos_2 + pos_3) / 2)
+		retVal = 143; // T1a
+	else if (adc > (pos_2 + pos_3) / 2 && adc <= (pos_3 + pos_4) / 2)
+		retVal = 286; // T1
+	else if (adc > (pos_3 + pos_4) / 2 && adc <= (pos_4 + pos_5) / 2)
+		retVal = 429; // 0
+	else if (adc > (pos_4 + pos_5) / 2 && adc <= (pos_5 + pos_6) / 2)
+		retVal = 571; // X1
+	else if (adc > (pos_5 + pos_6) / 2 && adc <= (pos_6 + pos_7) / 2)
+		retVal = 714; // X2
+	else if (adc > (pos_6 + pos_7) / 2)
+		retVal = 857; // X3
 
 	return retVal;
 }
@@ -781,6 +802,19 @@ void UARTFrontView717::ReadKM013Calibrations()
 	m_KM013Calib.m_Pos5 = GetPrivateProfileInt("KM013", "Pos5", 4, CALIBRATIONS_FILE);
 	m_KM013Calib.m_Pos6 = GetPrivateProfileInt("KM013", "Pos6", 5, CALIBRATIONS_FILE);
 	m_KM013Calib.m_Pos7 = GetPrivateProfileInt("KM013", "Pos7", 6, CALIBRATIONS_FILE);
+}
+
+void UARTFrontView717::ReadControllerCalibrations()
+{
+	PRINT_FUNCSIG;
+
+	m_ControllerCalib.m_PosX3 = GetPrivateProfileInt("Controller", "PosX3", 6, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosX2 = GetPrivateProfileInt("Controller", "PosX2", 5, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosX1 = GetPrivateProfileInt("Controller", "PosX1", 4, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_Pos0 = GetPrivateProfileInt("Controller", "Pos0", 3, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosT1 = GetPrivateProfileInt("Controller", "PosT1", 2, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosT1a = GetPrivateProfileInt("Controller", "PosT1a", 1, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosT2 = GetPrivateProfileInt("Controller", "PosT2", 0, CALIBRATIONS_FILE);
 }
 
 void UARTFrontView717::ReadTCCalibrations()

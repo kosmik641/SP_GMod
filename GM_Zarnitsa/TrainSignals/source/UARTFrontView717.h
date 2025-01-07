@@ -2,11 +2,12 @@
 #include "utf8_to_cp1251.h"
 #include "params.h"
 #include "UnivCon3_2.h"
+#include "UnivCon3_7.h"
 #include <Windows.h>
 #include <memory>
 #include <string>
 #include <thread>
-#include <map>
+#include <unordered_map>
 #include <regex>
 
 #define minmax(_val,_min,_max) max(_min, min(_val, _max))
@@ -29,7 +30,7 @@ public:
 		return VarTable[idx].val * 0.001f;
 	};
 
-	std::map<std::string, ControlItem> VarTable;
+	std::unordered_map<std::string, ControlItem> VarTable;
 };
 
 class UARTFrontView717
@@ -38,7 +39,7 @@ public:
 	UARTFrontView717();
 	~UARTFrontView717();
 
-	int Start(int port, int version);
+	int Start(int port);
 	void Stop(bool force = false);
 
 	void LoadSleepTimings();
@@ -54,7 +55,7 @@ public:
 	std::string m_ASOTPText;
 	std::string m_ASNPText;
 private:
-	void SetupConfig();
+	void LoadConfig();
 	void DeviceThreadFunc();
 	void DataExchangeInputs();
 	void DataExchangeOutputs();

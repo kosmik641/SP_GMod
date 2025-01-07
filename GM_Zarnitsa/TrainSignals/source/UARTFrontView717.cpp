@@ -14,19 +14,25 @@ UARTFrontView717::~UARTFrontView717()
 	DeleteCriticalSection(&m_CriticalSection);
 }
 
-int UARTFrontView717::Start(int port,int version)
+int UARTFrontView717::Start(int port)
 {
 	PRINT_FUNCSIG;
 
+	int model = GetPrivateProfileIntA("Configuration", "Model", 0, CONFIG_FILE);
+
 	// Создаем объект CUnivCon
-	switch (version)
+	switch (model)
 	{
 	case 32:
-		PRINT_MSG_DBG("Select version 32\n");
+		PRINT_MSG_DBG("Select model 32\n");
 		m_UnivConv.reset(new CUnivCon3_2());
 		break;
+	case 37:
+		PRINT_MSG_DBG("Select model 37\n");
+		m_UnivConv.reset(new CUnivCon3_7());
+		break;
 	default:
-		PRINT_MSG_ERROR("Version %d not implemented\n",version);
+		PRINT_MSG_ERROR("Model %d not implemented\n", model);
 		return -1;
 	}
 

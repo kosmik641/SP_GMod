@@ -73,7 +73,6 @@ CUnivCon::ErrorCode CUnivCon3_2::Setup()
 			m_Connected = true;
 			return E_SUCCESS;
 		}
-			
 	}
 
 	// Если сконфигурировать не удалось
@@ -151,7 +150,7 @@ void CUnivCon3_2::Stop()
 void CUnivCon3_2::ReadSignals(Signals& signals)
 {
 	static byte cmdRead[]{ 0x00, 0x85 };
-	WriteFile(m_hPort, &cmdRead, 2, nullptr, nullptr);
+	WriteFile(m_hPort, &cmdRead, sizeof(cmdRead), nullptr, nullptr);
 
 	auto inBytes = m_Data.arrInputBytes.get();
 	ReadFile(m_hPort, inBytes, m_Data.nInputBytes + 3, nullptr, nullptr);
@@ -334,15 +333,15 @@ CUnivCon::ErrorCode CUnivCon3_2::OpenCOMPort(int port)
 		return E_SETUPCOMM;
 	}
 
-	static byte cmdDetect[2]{ 0x00,0x80 };
+	static byte cmdDetect[]{ 0x00, 0x80 };
 	byte answerBuf{};
 
 	PurgeComm(m_hPort, PURGE_RXCLEAR | PURGE_TXCLEAR);
 	Sleep(10);
 
 	PRINT_MSG_DBG("Send mirror command...\n");
-	WriteFile(m_hPort, &cmdDetect, 2, nullptr, nullptr);
-	ReadFile(m_hPort, &answerBuf, 1, nullptr, nullptr);
+	WriteFile(m_hPort, &cmdDetect, sizeof(cmdDetect), nullptr, nullptr);
+	ReadFile(m_hPort, &answerBuf, sizeof(answerBuf), nullptr, nullptr);
 	PRINT_MSG_DBG("Answer = 0x%02X\n", answerBuf);
 	if (answerBuf != 0x66)
 	{
@@ -372,11 +371,11 @@ CUnivCon::ErrorCode CUnivCon3_2::WriteConfiguration(const byte* configData, int 
 	PRINT_MSG_DBG("\tbytesToRead = %d\n", bytesToRead);
 	if (bytesToRead == 2)
 	{
-		byte buffACK[2]{};
-		ReadFile(m_hPort, &buffACK, bytesToRead, nullptr, nullptr);
+		byte ackBuf[2]{};
+		ReadFile(m_hPort, &ackBuf, bytesToRead, nullptr, nullptr);
 
-		PRINT_MSG_DBG("buffACK = {0x%02X, 0x%02X};\n", buffACK[0], buffACK[1]);
-		if ((buffACK[0] == 0x01) && (buffACK[1] == 0x8F))
+		PRINT_MSG_DBG("ackBuf = {0x%02X, 0x%02X};\n", ackBuf[0], ackBuf[1]);
+		if ((ackBuf[0] == 0x01) && (ackBuf[1] == 0x8F))
 		{
 			PurgeComm(m_hPort, PURGE_RXCLEAR | PURGE_TXCLEAR);
 			Sleep(100);

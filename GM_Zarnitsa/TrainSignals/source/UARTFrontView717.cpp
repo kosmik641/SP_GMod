@@ -438,7 +438,7 @@ void UARTFrontView717::DataExchangeInputs()
 
 	inTable["RC1"].val = m_Signals.arrInput[160];
 	inTable["VB"].val = m_Signals.arrInput[161];
-	inTable["UOS"].val = m_Signals.arrInput[165];
+	inTable["UOS"].val = m_Signals.arrInput[165] == 0;
 	//inTable["UAVA"].val = m_Signals.arrInput[167];
 
 	inTable["VMK"].val = m_Signals.arrInput[168];
@@ -484,7 +484,7 @@ void UARTFrontView717::DataExchangeInputs()
 	inTable["L_2"].val = m_Signals.arrInput[210];
 	inTable["L_3"].val = m_Signals.arrInput[211];
 	inTable["VP"].val = m_Signals.arrInput[212];
-	inTable["KRUPosition"].val = m_Signals.arrInput[213] + m_Signals.arrInput[214]; // FIXME?
+	inTable["KRUPosition"].val = m_Signals.arrInput[214] ? 2 : m_Signals.arrInput[213] ? 1 : 0;
 
 	inTable["KRP"].val = m_Signals.arrInput[216];
 	inTable["KAH"].val = m_Signals.arrInput[217];
@@ -507,13 +507,13 @@ void UARTFrontView717::DataExchangeInputs()
 	//inTable["IGLA3"].val = m_Signals.arrInput[]; // No button
 	inTable["IGLA4"].val = m_Signals.arrInput[249];
 
-	inTable["DriverValveDisconnect"].val = m_Signals.arrInput[291];
-	inTable["ParkingBrake"].val = m_Signals.arrInput[292];
-	inTable["EPK"].val = m_Signals.arrInput[293];
+	inTable["DriverValveDisconnect"].val = m_Signals.arrInput[291] == 0;
+	inTable["ParkingBrake"].val = m_Signals.arrInput[292] == 0;
+	inTable["EPK"].val = m_Signals.arrInput[293] == 0;
 
-	inTable["VUD2"].val = m_Signals.arrInput[302];
+	inTable["VUD2"].val = m_Signals.arrInput[302] == 0;
 	inTable["R_Program1H"].val = m_Signals.arrInput[303];
-	inTable["VDL"].val = m_Signals.arrInput[310];
+	inTable["VDL"].val = m_Signals.arrInput[310] == 0;
 	inTable["R_Program2H"].val = m_Signals.arrInput[311];
 
 	inTable["EmergencyBrakeValve"].val = !ADCStopcrane(m_Signals.arrADC[0]);

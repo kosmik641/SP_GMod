@@ -31,7 +31,7 @@ CUnivCon::ErrorCode CUnivCon3_7::Setup()
 		for (int p = 0; p < 24; p++)
 		{
 			int iPin = iController * 24 + p;
-			iByte = iPin / 4 + 2;
+			iByte = iPin / 4 + 4;
 
 			arrConfigBytes[iByte + iController] |= (byte)((m_Config.arrPins[iPin] << 6) >> ((iPin % 4) * 2));
 
@@ -183,7 +183,7 @@ void CUnivCon3_7::ReadSignals(Signals& signals)
 		for (int i_Pin = 0; i_Pin < 24; i_Pin++)
 		{
 			int i_InputSignal = i_Controller * 24 + i_Pin;
-			signals.arrInput[i_InputSignal] = ((inBytes[i_Byte] << (i_Pin % 8)) & 0x80) >> 7;
+			signals.arrInput[i_InputSignal] = (((inBytes[i_Byte] << (i_Pin % 8)) & 0x80) >> 7) == 0;
 			if (i_Pin == 7 || i_Pin == 15 || i_Pin == 23)
 				i_Byte++;
 		}
@@ -391,7 +391,7 @@ CUnivCon::ErrorCode CUnivCon3_7::WriteConfiguration(const byte* configData, int 
 		if (memcmp(ackBuf, ackCorrect, 5) == 0)
 		{
 			PurgeComm(m_hPort, PURGE_RXCLEAR | PURGE_TXCLEAR);
-			Sleep(100);
+			Sleep(500);
 			return E_SUCCESS;
 		}
 	}

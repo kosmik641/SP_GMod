@@ -532,7 +532,7 @@ void UARTFrontView717::DataExchangeInputs()
 	inTable["AV3"].val = m_Signals.arrInput[187];
 	//inTable["UPPS_On"].val = m_Signals.arrInput[188]; // TODO
 
-	inTable["EmergencyBrakeValve"].val = !ADCStopcrane(m_Signals.arrADC[0]);
+	inTable["EmergencyBrakeValve"].val =  m_Signals.arrInput[0];
 	inTable["CranePosition"].val = ADCKM013(m_Signals.arrADC[1]) * 1000;
 
 	LeaveCriticalSection(&m_CriticalSection);
@@ -544,6 +544,11 @@ void UARTFrontView717::DataExchangeOutputs()
 
 	// Индикация
 	auto& outTable = m_NW2VarTableOutput.VarTable;
+	m_Signals.arrOutput[1] = (outTable["CabLights"].val > 0 || outTable["EqLights"].val > 0); // Освещение кабины слаб.
+	m_Signals.arrOutput[2] = (outTable["CabLights"].val > 0 && outTable["EqLights"].val > 0); // Освещение кабины сильн.
+	m_Signals.arrOutput[3] = outTable["PanelLights"].val;//Освещение приборов
+	m_Signals.arrOutput[4] = outTable["EqLights"].val;//Освещение отсека
+	
 	m_Signals.arrOutput[200] = outTable["AR04"].val;
 	m_Signals.arrOutput[201] = outTable["AR0"].val;
 	m_Signals.arrOutput[202] = outTable["AR40"].val;

@@ -64,6 +64,7 @@ private:
 
 	bool ADCStopcrane(int adc);
 	int ADCKM013(int adc);
+	int ADCController(int adc);
 
 	int StepTC(float value);
 	int StepNM(float value);
@@ -77,6 +78,7 @@ private:
 
 	void ReadStopcraneCalibrations();
 	void ReadKM013Calibrations();
+	void ReadControllerCalibrations();
 
 	void ReadTCCalibrations();
 	void ReadNMCalibrations();
@@ -119,6 +121,17 @@ private:
 		unsigned int m_Pos6 = 5;
 		unsigned int m_Pos7 = 6;
 	} m_KM013Calib;
+
+	struct ControllerCalibrate
+	{
+		unsigned int m_PosX3 = 6;
+		unsigned int m_PosX2 = 5;
+		unsigned int m_PosX1 = 4;
+		unsigned int m_Pos0 = 3;
+		unsigned int m_PosT1 = 2;
+		unsigned int m_PosT1a = 1;
+		unsigned int m_PosT2 = 0;
+	} m_ControllerCalib;
 
 	struct ArrowCalibrate
 	{

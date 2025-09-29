@@ -127,6 +127,7 @@ void TrainIODevice::LoadCalibartions()
 
 	ReadStopcraneCalibrations();
 	ReadKM013Calibrations();
+	ReadControllerCalibrations();
 
 	ReadTCCalibrations();
 	ReadNMCalibrations();
@@ -147,6 +148,15 @@ void TrainIODevice::LoadCalibartions()
 	PRINT_MSG_DBG("    Pos5 = %d\n", m_KM013Calib.m_Pos5);
 	PRINT_MSG_DBG("    Pos6 = %d\n", m_KM013Calib.m_Pos6);
 	PRINT_MSG_DBG("    Pos7 = %d\n", m_KM013Calib.m_Pos7);
+
+	PRINT_MSG_DBG("Controller:\n");
+	PRINT_MSG_DBG("    PosX3  = %d\n", m_ControllerCalib.m_PosX3);
+	PRINT_MSG_DBG("    PosX2  = %d\n", m_ControllerCalib.m_PosX2);
+	PRINT_MSG_DBG("    PosX1  = %d\n", m_ControllerCalib.m_PosX1);
+	PRINT_MSG_DBG("    Pos0   = %d\n", m_ControllerCalib.m_Pos0);
+	PRINT_MSG_DBG("    PosT1  = %d\n", m_ControllerCalib.m_PosT1);
+	PRINT_MSG_DBG("    PosT1a = %d\n", m_ControllerCalib.m_PosT1a);
+	PRINT_MSG_DBG("    PosT2  = %d\n", m_ControllerCalib.m_PosT2);
 
 	PRINT_MSG_DBG("TC:\n");
 	PRINT_MSG_DBG("    Min = %d\n", m_TCCalib.m_Min);
@@ -675,6 +685,37 @@ int TrainIODevice::ADCKM013(int adc)
 	return retVal;
 }
 
+int TrainIODevice::ADCController(int adc)
+{
+	int retVal = 429; // 0
+
+	int pos_1 = m_ControllerCalib.m_PosT2;
+	int pos_2 = m_ControllerCalib.m_PosT1a;
+	int pos_3 = m_ControllerCalib.m_PosT1;
+	int pos_4 = m_ControllerCalib.m_Pos0;
+	int pos_5 = m_ControllerCalib.m_PosX1;
+	int pos_6 = m_ControllerCalib.m_PosX2;
+	int pos_7 = m_ControllerCalib.m_PosX3;
+
+	if (adc <= (pos_1 + pos_2) / 2)
+		retVal = 0; // T2
+	else if (adc > (pos_1 + pos_2) / 2 && adc <= (pos_2 + pos_3) / 2)
+		retVal = 143; // T1a
+	else if (adc > (pos_2 + pos_3) / 2 && adc <= (pos_3 + pos_4) / 2)
+		retVal = 286; // T1
+	else if (adc > (pos_3 + pos_4) / 2 && adc <= (pos_4 + pos_5) / 2)
+		retVal = 429; // 0
+	else if (adc > (pos_4 + pos_5) / 2 && adc <= (pos_5 + pos_6) / 2)
+		retVal = 571; // X1
+	else if (adc > (pos_5 + pos_6) / 2 && adc <= (pos_6 + pos_7) / 2)
+		retVal = 714; // X2
+	else if (adc > (pos_6 + pos_7) / 2)
+		retVal = 857; // X3
+
+	return retVal;
+}
+
+
 int TrainIODevice::StepTC(float value)
 {
 	int m_Min = m_TCCalib.m_Min;
@@ -786,6 +827,19 @@ void TrainIODevice::ReadKM013Calibrations()
 	m_KM013Calib.m_Pos5 = GetPrivateProfileInt("KM013", "Pos5", 4, CALIBRATIONS_FILE);
 	m_KM013Calib.m_Pos6 = GetPrivateProfileInt("KM013", "Pos6", 5, CALIBRATIONS_FILE);
 	m_KM013Calib.m_Pos7 = GetPrivateProfileInt("KM013", "Pos7", 6, CALIBRATIONS_FILE);
+}
+
+void TrainIODevice::ReadControllerCalibrations()
+{
+	PRINT_FUNCSIG;
+
+	m_ControllerCalib.m_PosX3 = GetPrivateProfileInt("Controller", "PosX3", 6, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosX2 = GetPrivateProfileInt("Controller", "PosX2", 5, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosX1 = GetPrivateProfileInt("Controller", "PosX1", 4, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_Pos0 = GetPrivateProfileInt("Controller", "Pos0", 3, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosT1 = GetPrivateProfileInt("Controller", "PosT1", 2, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosT1a = GetPrivateProfileInt("Controller", "PosT1a", 1, CALIBRATIONS_FILE);
+	m_ControllerCalib.m_PosT2 = GetPrivateProfileInt("Controller", "PosT2", 0, CALIBRATIONS_FILE);
 }
 
 void TrainIODevice::ReadTCCalibrations()

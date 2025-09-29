@@ -33,11 +33,11 @@ public:
 	std::unordered_map<std::string, ControlItem> VarTable;
 };
 
-class UARTFrontView717
+class TrainIODevice
 {
 public:
-	UARTFrontView717();
-	~UARTFrontView717();
+	TrainIODevice();
+	~TrainIODevice();
 
 	int Start(int port);
 	void Stop(bool force = false);

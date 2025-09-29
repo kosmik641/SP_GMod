@@ -16,6 +16,6 @@ public:
 
 private:
     virtual ErrorCode OpenCOMPort(int port) override;
-    virtual ErrorCode WriteConfiguration(const byte* configData, int size);
+    virtual ErrorCode WriteConfiguration(const byte* configData, int size) override;
 };
 

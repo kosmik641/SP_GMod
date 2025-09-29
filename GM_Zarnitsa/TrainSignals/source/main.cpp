@@ -1,5 +1,6 @@
 ﻿#include "main.h"
 
+TrainIODevice g_Device{};
 using namespace GarrysMod::Lua;
 
 LUA_FUNCTION(API_Start)

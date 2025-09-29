@@ -1,20 +1,20 @@
-﻿#include "UARTFrontView717.h"
+﻿#include "TrainIODevice.h"
 
-UARTFrontView717::UARTFrontView717()
+TrainIODevice::TrainIODevice()
 {
 	PRINT_FUNCSIG;
 
 	InitializeCriticalSection(&m_CriticalSection);
 }
 
-UARTFrontView717::~UARTFrontView717()
+TrainIODevice::~TrainIODevice()
 {
 	PRINT_FUNCSIG;
 
 	DeleteCriticalSection(&m_CriticalSection);
 }
 
-int UARTFrontView717::Start(int port)
+int TrainIODevice::Start(int port)
 {
 	PRINT_FUNCSIG;
 
@@ -80,13 +80,13 @@ int UARTFrontView717::Start(int port)
 	LoadCalibartions();
 
 	// Запуск потока
-	m_DeviceThread = std::thread(&UARTFrontView717::DeviceThreadFunc, this);
+	m_DeviceThread = std::thread(&TrainIODevice::DeviceThreadFunc, this);
 	m_DeviceThread.detach();
 
 	return 0;
 }
 
-void UARTFrontView717::Stop(bool force)
+void TrainIODevice::Stop(bool force)
 {
 	PRINT_FUNCSIG;
 
@@ -97,7 +97,7 @@ void UARTFrontView717::Stop(bool force)
 	m_ThreadForceStop = force;
 }
 
-void UARTFrontView717::LoadSleepTimings()
+void TrainIODevice::LoadSleepTimings()
 {
 	PRINT_FUNCSIG;
 
@@ -117,7 +117,7 @@ void UARTFrontView717::LoadSleepTimings()
 	PRINT_MSG_DBG("    AfterAll = %u ms\n",m_sleepTimes.afterAll);
 }
 
-void UARTFrontView717::LoadCalibartions()
+void TrainIODevice::LoadCalibartions()
 {
 	PRINT_FUNCSIG;
 	
@@ -173,26 +173,26 @@ void UARTFrontView717::LoadCalibartions()
 	PRINT_MSG_DBG("    Max = %d\n", m_BattVoltmeterCalib.m_Max);
 }
 
-bool UARTFrontView717::IsConnected()
+bool TrainIODevice::IsConnected()
 {
 	if (m_UnivConv == nullptr)
 		return false;
 	return m_UnivConv->IsConnected();
 }
 
-int UARTFrontView717::GetPortNumber()
+int TrainIODevice::GetPortNumber()
 {
 	if (m_UnivConv == nullptr)
 		return -1;
 	return m_UnivConv->GetPortNumber();
 }
 
-CRITICAL_SECTION* UARTFrontView717::GetCriticalSection()
+CRITICAL_SECTION* TrainIODevice::GetCriticalSection()
 {
 	return &m_CriticalSection;
 }
 
-void UARTFrontView717::LoadConfig()
+void TrainIODevice::LoadConfig()
 {
 	PRINT_FUNCSIG;
 
@@ -290,7 +290,7 @@ void UARTFrontView717::LoadConfig()
 	PRINT_MSG_DBG("m_Signals.arrTextDisplay size = %d\n", nTextDisplays);
 }
 
-void UARTFrontView717::DeviceThreadFunc()
+void TrainIODevice::DeviceThreadFunc()
 {
 	m_ThreadRunning = true;
 	m_ThreadStop = false;
@@ -336,7 +336,7 @@ void UARTFrontView717::DeviceThreadFunc()
 	PRINT_MSG("Thread working end.\n");
 }
 
-void UARTFrontView717::DataExchangeInputs()
+void TrainIODevice::DataExchangeInputs()
 {
 	EnterCriticalSection(&m_CriticalSection);
 
@@ -538,7 +538,7 @@ void UARTFrontView717::DataExchangeInputs()
 	LeaveCriticalSection(&m_CriticalSection);
 }
 
-void UARTFrontView717::DataExchangeOutputs()
+void TrainIODevice::DataExchangeOutputs()
 {
 	EnterCriticalSection(&m_CriticalSection);
 
@@ -620,7 +620,7 @@ void UARTFrontView717::DataExchangeOutputs()
 	LeaveCriticalSection(&m_CriticalSection);
 }
 
-bool UARTFrontView717::CreateCalibrationsFile()
+bool TrainIODevice::CreateCalibrationsFile()
 {
 	auto hFile = CreateFile(CALIBRATIONS_FILE, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hFile == INVALID_HANDLE_VALUE)
@@ -630,7 +630,7 @@ bool UARTFrontView717::CreateCalibrationsFile()
 	return true;
 }
 
-bool UARTFrontView717::ADCStopcrane(int adc)
+bool TrainIODevice::ADCStopcrane(int adc)
 {
 	bool retVal = false;
 
@@ -645,7 +645,7 @@ bool UARTFrontView717::ADCStopcrane(int adc)
 	return retVal;
 }
 
-int UARTFrontView717::ADCKM013(int adc)
+int TrainIODevice::ADCKM013(int adc)
 {
 	int retVal = 7;
 
@@ -675,7 +675,7 @@ int UARTFrontView717::ADCKM013(int adc)
 	return retVal;
 }
 
-int UARTFrontView717::StepTC(float value)
+int TrainIODevice::StepTC(float value)
 {
 	int m_Min = m_TCCalib.m_Min;
 	int m_Max = m_TCCalib.m_Max;
@@ -689,7 +689,7 @@ int UARTFrontView717::StepTC(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::StepNM(float value)
+int TrainIODevice::StepNM(float value)
 {
 	int m_Min = m_NMCalib.m_Min;
 	int m_Max = m_NMCalib.m_Max;
@@ -703,7 +703,7 @@ int UARTFrontView717::StepNM(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::StepTM(float value)
+int TrainIODevice::StepTM(float value)
 {
 	int m_Min = m_TMCalib.m_Min;
 	int m_Max = m_TMCalib.m_Max;
@@ -717,7 +717,7 @@ int UARTFrontView717::StepTM(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::StepKiloVoltmeter(float value)
+int TrainIODevice::StepKiloVoltmeter(float value)
 {
 	int m_Min = m_KiloVoltmeterCalib.m_Min;
 	int m_Max = m_KiloVoltmeterCalib.m_Max;
@@ -731,7 +731,7 @@ int UARTFrontView717::StepKiloVoltmeter(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::StepAmmeter(float value)
+int TrainIODevice::StepAmmeter(float value)
 {
 	int m_Min = m_AmmeterCalib.m_Min;
 	int m_Max = m_AmmeterCalib.m_Max;
@@ -745,7 +745,7 @@ int UARTFrontView717::StepAmmeter(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-int UARTFrontView717::StepBattVoltmeter(float value)
+int TrainIODevice::StepBattVoltmeter(float value)
 {
 	int m_Min = m_BattVoltmeterCalib.m_Min;
 	int m_Max = m_BattVoltmeterCalib.m_Max;
@@ -759,7 +759,7 @@ int UARTFrontView717::StepBattVoltmeter(float value)
 		return minmax(retVal, m_Max, m_Min);
 }
 
-void UARTFrontView717::ReadSleepTimes()
+void TrainIODevice::ReadSleepTimes()
 {
 	m_sleepTimes.afterRead = GetPrivateProfileInt("Sleep", "AfterRead", 5, SLEEPTIMINGS_FILE);
 	m_sleepTimes.afterWriteSignals = GetPrivateProfileInt("Sleep", "AfterWriteSignals", 25, SLEEPTIMINGS_FILE);
@@ -767,7 +767,7 @@ void UARTFrontView717::ReadSleepTimes()
 	m_sleepTimes.afterAll = GetPrivateProfileInt("Sleep", "AfterAll", 30, SLEEPTIMINGS_FILE);
 }
 
-void UARTFrontView717::ReadStopcraneCalibrations()
+void TrainIODevice::ReadStopcraneCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -775,7 +775,7 @@ void UARTFrontView717::ReadStopcraneCalibrations()
 	m_StopcraneCalib.m_On = GetPrivateProfileInt("Stopcrane", "On", 1, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadKM013Calibrations()
+void TrainIODevice::ReadKM013Calibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -788,7 +788,7 @@ void UARTFrontView717::ReadKM013Calibrations()
 	m_KM013Calib.m_Pos7 = GetPrivateProfileInt("KM013", "Pos7", 6, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadTCCalibrations()
+void TrainIODevice::ReadTCCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -796,7 +796,7 @@ void UARTFrontView717::ReadTCCalibrations()
 	m_TCCalib.m_Max = GetPrivateProfileInt("TC", "Max", 6, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadNMCalibrations()
+void TrainIODevice::ReadNMCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -804,7 +804,7 @@ void UARTFrontView717::ReadNMCalibrations()
 	m_NMCalib.m_Max = GetPrivateProfileInt("NM", "Max", 16, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadTMCalibrations()
+void TrainIODevice::ReadTMCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -812,7 +812,7 @@ void UARTFrontView717::ReadTMCalibrations()
 	m_TMCalib.m_Max = GetPrivateProfileInt("TM", "Max", 16, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadKiloVoltmeterCalibrations()
+void TrainIODevice::ReadKiloVoltmeterCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -820,7 +820,7 @@ void UARTFrontView717::ReadKiloVoltmeterCalibrations()
 	m_KiloVoltmeterCalib.m_Max = GetPrivateProfileInt("KiloVoltmeter", "Max", 1000, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadAmmeterCalibrations()
+void TrainIODevice::ReadAmmeterCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -828,7 +828,7 @@ void UARTFrontView717::ReadAmmeterCalibrations()
 	m_AmmeterCalib.m_Max = GetPrivateProfileInt("Ammeter", "Max", 1000, CALIBRATIONS_FILE);
 }
 
-void UARTFrontView717::ReadBattVoltmerCalibrations()
+void TrainIODevice::ReadBattVoltmerCalibrations()
 {
 	PRINT_FUNCSIG;
 
@@ -836,7 +836,7 @@ void UARTFrontView717::ReadBattVoltmerCalibrations()
 	m_BattVoltmeterCalib.m_Max = GetPrivateProfileInt("BattVoltmeter", "Max", 150, CALIBRATIONS_FILE);
 }
 
-CUnivCon::ConfigState UARTFrontView717::ParseConfig(const char* key, const char* value)
+CUnivCon::ConfigState TrainIODevice::ParseConfig(const char* key, const char* value)
 {
 	auto val = std::regex_replace(value, std::regex(R"(^\s*(.*?)\s*;.*$)"), "$1");
 	if (val == "0" || val == "NotUsed")

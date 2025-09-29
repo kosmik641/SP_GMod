@@ -10,13 +10,12 @@ public:
     virtual ErrorCode Setup() override;
     virtual void Stop() override;
     
-
     virtual void ReadSignals(Signals& signals) override;
     virtual void WriteSignals(Signals& signals) override;
     virtual void WriteUARTData(Signals& signals) override;
 
 private:
     virtual ErrorCode OpenCOMPort(int port) override;
-    virtual ErrorCode WriteConfiguration(const byte* configData, int size);
+    virtual ErrorCode WriteConfiguration(const byte* configData, int size) override;
 };
 

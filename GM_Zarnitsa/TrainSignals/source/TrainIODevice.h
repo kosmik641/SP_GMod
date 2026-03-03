@@ -44,6 +44,7 @@ public:
 
 	void LoadSleepTimings();
 	void LoadCalibartions();
+	void InitNW2Tables();
 
 	bool IsConnected();
 	int GetPortNumber();

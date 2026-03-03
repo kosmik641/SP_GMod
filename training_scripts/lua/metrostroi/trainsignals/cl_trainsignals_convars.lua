@@ -22,6 +22,10 @@ concommand.Add("zarn_reload_sleeps",function(ply,cmd,args)
     if TrainSignals.Module then TrainSignals.Module.LoadSleepTimings(args[1]) end
 end,nil,"Reload sleep timings from file. Usage: zarn_reload_sleeps [true for print values]")
 
+concommand.Add("zarn_clear",function(ply,cmd,args)
+    if TrainSignals.Module then TrainSignals.Module.ClearBuffers() end
+end,nil,"Clear IO buffers. Usage: zarn_clear")
+
 concommand.Add("zarn_force_stop",function(ply,cmd,args)
     if TrainSignals.Module then TrainSignals.Module.ForceStop() end
 end,nil,"Force stop without deconfiguration. Usage: zarn_force_stop")

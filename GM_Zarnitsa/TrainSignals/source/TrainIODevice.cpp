@@ -78,6 +78,7 @@ int TrainIODevice::Start(int port)
 	LoadConfig();
 	LoadSleepTimings();
 	LoadCalibartions();
+	InitNW2Tables();
 
 	// Запуск потока
 	m_DeviceThread = std::thread(&TrainIODevice::DeviceThreadFunc, this);
@@ -183,6 +184,18 @@ void TrainIODevice::LoadCalibartions()
 	PRINT_MSG_DBG("    Max = %d\n", m_BattVoltmeterCalib.m_Max);
 }
 
+void TrainIODevice::InitNW2Tables()
+{
+	m_NW2VarTableOutput.VarTable.clear();
+	m_NW2VarTableInput.VarTable.clear();
+
+	// Задание типа Integer для переменных (TODO: Вынести в файл конфигурации)
+	m_NW2VarTableInput.VarTable["ControllerPosition"].type = 3;
+	m_NW2VarTableInput.VarTable["ReverserPosition"].type = 3;
+	m_NW2VarTableInput.VarTable["KRUPosition"].type = 3;
+	m_NW2VarTableInput.VarTable["CranePosition"].type = 3;
+}
+
 bool TrainIODevice::IsConnected()
 {
 	if (m_UnivConv == nullptr)
@@ -284,12 +297,6 @@ void TrainIODevice::LoadConfig()
 	m_Signals.arrArrow.reset(new int[nArrows]());
 	m_Signals.arr7SegDec.reset(new int[n7SegDec]());
 	m_Signals.arrTextDisplay.reset(new CUnivCon::TextDisplaySignals[nTextDisplays]());
-
-	// Задание типа Integer для переменных
-	m_NW2VarTableInput.VarTable["ControllerPosition"].type = 3;
-	m_NW2VarTableInput.VarTable["ReverserPosition"].type = 3;
-	m_NW2VarTableInput.VarTable["KRUPosition"].type = 3;
-	m_NW2VarTableInput.VarTable["CranePosition"].type = 3;
 
 	PRINT_MSG_DBG("config.nControllers = %d\n", nControllers);
 	PRINT_MSG_DBG("m_Signals.arrInput:		size = %d\n", nPins);

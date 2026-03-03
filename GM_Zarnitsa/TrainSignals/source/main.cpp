@@ -51,13 +51,31 @@ LUA_FUNCTION(API_DataExchange)
 	if (!g_Device.IsConnected())
 		return 0;
 
+	// Get function Entity__GetNetworked2VarTable__Redirect(lua_State*)
+	static GM::CFunc ENT_GetNW2VarTable = nullptr;
+	if (ENT_GetNW2VarTable == nullptr)
+	{
+		LUA->GetField(-1, "GetNW2VarTable");
+		if (LUA->IsType(-1, GM::Type::Function))
+		{
+			ENT_GetNW2VarTable = LUA->GetCFunction(-1);
+			if (ENT_GetNW2VarTable == nullptr)
+			{
+				PRINT_MSG_ERROR("Fail to get Entity__GetNetworked2VarTable__Redirect(lua_State*)\n");
+				LUA->Pop();
+				return 0;
+			}
+		}
+		LUA->Pop();
+	}	
+
 	auto& tableOut = g_Device.m_NW2VarTableOutput.VarTable;
 	auto& tableIn = g_Device.m_NW2VarTableInput.VarTable;
 
 	const char* asotpStr = nullptr;
 	const char* asnpStr = nullptr;
 
-	LUA->CheckType(1, GM::Type::Entity);		// [Train]
+	LUA->CheckType(1, GM::Type::Entity);	// [Train]
 
 	// Get ASOTP text
 	LUA->GetField(-1, "ASOTPText");			// [Train,ASOTPText]
@@ -84,13 +102,11 @@ LUA_FUNCTION(API_DataExchange)
 	LUA->Pop();								// [Train]
 
 	// Get NW2 vars table
-	LUA->GetField(-1, "GetNW2VarTable");	// [Train,ENT:GetNW2VarTable()]
+	LUA->PushCFunction(ENT_GetNW2VarTable);	// [Train,ENT:GetNW2VarTable()]
 	LUA->Push(1);							// [Train,ENT:GetNW2VarTable(),Train]
 	LUA->Call(1, 1);						// [Train,NW2VarTable]
-	LUA->CheckType(-1, GM::Type::Table);		// [Train,NW2VarTable]
-	LUA->PushNil();							// [Train,NW2VarTable,Nil]
+	LUA->PushNil();							// [Train,NW2VarTable,Nil], set first key as nil
 
-	// -2 - key, -1 - value
 	EnterCriticalSection(g_CriticalSection);
 	if (asotpStr != nullptr)
 	{
@@ -100,26 +116,27 @@ LUA_FUNCTION(API_DataExchange)
 	{
 		g_Device.m_ASNPText = asnpStr;
 	}
+
+	// -2 - key, -1 - value
 	while (LUA->Next(-2) != 0)
 	{
 		NW2VarTable::ControlItem control;
-		auto NW2VarName = LUA->GetString(-2);
-		LUA->CheckType(-1, GM::Type::Table);	    // [Train,NW2VarTable,Key(String),Value(Table)]
-			LUA->GetField(-1, "value");			// [Train,NW2VarTable,Key(String),Value(Table),Value(Table).value]
-				int valType = LUA->GetType(-1);
-				if (valType == GM::Type::Bool)
-				{
-					control.val = LUA->GetBool(-1);
-					control.type = valType;
-				}
-				else if (valType == GM::Type::Number)
-				{
-					control.val = (int)LUA->GetNumber(-1);
-					control.type = valType;
-				}
-			LUA->Pop();						// [Train,NW2VarTable,Key(String),Value(Table)]
-		LUA->Pop();							// [Train,NW2VarTable,Key(String)]
-		LUA->CheckType(-1, GM::Type::String);
+		const char* NW2VarName = LUA->GetString(-2);	// [Train,NW2VarTable,Key(String),Value(Table)]
+		LUA->GetField(-1, "value");						// [Train,NW2VarTable,Key(String),Value(Table),Value(Table).value]
+		{
+			int valType = LUA->GetType(-1);
+			if (valType == GM::Type::Bool)
+			{
+				control.val = LUA->GetBool(-1);
+				control.type = valType;
+			}
+			else if (valType == GM::Type::Number)
+			{
+				control.val = (int)LUA->GetNumber(-1);
+				control.type = valType;
+			}
+		}
+		LUA->Pop(2);									// [Train,NW2VarTable,Key(String)], keep key for next iter
 
 		tableOut[NW2VarName] = control;
 	}
@@ -174,6 +191,14 @@ LUA_FUNCTION(API_LoadCalibraions)
 	return 0;
 }
 
+LUA_FUNCTION(API_ClearBuffers)
+{
+	EnterCriticalSection(g_CriticalSection);
+	g_Device.InitNW2Tables();
+	LeaveCriticalSection(g_CriticalSection);
+	return 0;
+}
+
 LUA_FUNCTION(API_IsConnected)
 {
 	LUA->PushBool(g_Device.IsConnected());
@@ -211,6 +236,7 @@ GMOD_MODULE_OPEN()
 				PushCFunc(API_DataExchange, "DataExchange");
 				PushCFunc(API_LoadSleepTimings, "LoadSleepTimings");
 				PushCFunc(API_LoadCalibraions, "LoadCalibrations");
+				PushCFunc(API_ClearBuffers, "ClearBuffers");
 				PushCFunc(API_IsConnected, "IsConnected");
 				PushCFunc(API_Version, "Version");
 				PushStr(TRAIN_CLASSNAME, "TargetTrain");

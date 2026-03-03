@@ -9,8 +9,8 @@ local function addMirrors()
     Train.Mirrors_Old_Initialize = Train.Mirrors_Old_Initialize or Train.Initialize
     function Train:Initialize()
         self:Mirrors_Old_Initialize()
-        self.Mirror1 = self:CreateRT("717Mirror1",256,512)
-        self.Mirror2 = self:CreateRT("717Mirror2",256,512)
+        self.Mirror1 = self:CreateRT("TSMirrorL",256,512)
+        self.Mirror2 = self:CreateRT("TSMirrorR",256,512)
     end
 end
 timer.Simple(1,addMirrors)

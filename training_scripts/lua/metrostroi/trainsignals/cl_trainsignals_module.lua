@@ -1,4 +1,5 @@
-if not file.Exists("lua/bin/gmcl_trainsignals_win32.dll", "GAME") then MsgC(Color(255,0,0),"gmcl_trainsignals_win32 not found.\n") return end
+local _,files = file.Find("lua/bin/gmcl_trainsignals_*.dll", "GAME")
+if not files then MsgC(Color(255,0,0),"gmcl_trainsignals not found.\n") return end
 
 TrainSignals = TrainSignals or {}
 if not TrainSignals.Module then require("trainsignals") end
@@ -65,7 +66,6 @@ local function sendButtonMessageNamed(train,btnID,value)
 	end
 end
 
-local curTime = 0
 local reverserSwitchTimer = 0
 
 local kv717Fix = {
@@ -105,21 +105,21 @@ local specialButtons = {
 local function trainSignals_Main_Think()
 	Metrostroi.GetText = false
 	Metrostroi.MuteSounds = false
-	if not TrainSignals.Module then return end
-	local isConnected = TrainSignals.Module.IsConnected()
-	if not isConnected then return end
+    local Module = TrainSignals.Module
+	if not Module then return end
+	if not Module.IsConnected() then return end
 	local Train = LocalPlayer().InMetrostroiTrain
 	if not Train then return end
-	if Train.ClassName ~= TrainSignals.Module.TargetTrain then return end
+	if Train.ClassName ~= Module.TargetTrain then return end
 	Metrostroi.GetText = true
 	Metrostroi.MuteSounds = true
 
-	local InVar = TrainSignals.Module.DataExchange(Train)
+	local InVar = Module.DataExchange(Train)
 
-	curTime = CurTime()
+	local curTime = CurTime()
 	for k,v in pairs(InVar) do
-		if (specialButtons[k]) then
-			local id = specialButtons[k]
+        local id = specialButtons[k]
+		if id then
 			if (id == 4) then -- CranePosition
 				if (v == 0) then return end
 				sendButtonMessageNamed(Train,km013_717Fix[v/1000])

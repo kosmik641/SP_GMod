@@ -1,13 +1,13 @@
 ﻿#include "main.h"
 
 TrainIODevice g_Device{};
-using namespace GarrysMod::Lua;
+namespace GM = GarrysMod::Lua;
 
 LUA_FUNCTION(API_Start)
 {
 	PRINT_FUNCSIG;
 
-	LUA->CheckType(1, Type::Number);
+	LUA->CheckType(1, GM::Type::Number);
 
 	if (g_Device.IsConnected())
 	{
@@ -57,11 +57,11 @@ LUA_FUNCTION(API_DataExchange)
 	const char* asotpStr = nullptr;
 	const char* asnpStr = nullptr;
 
-	LUA->CheckType(1, Type::Entity);		// [Train]
+	LUA->CheckType(1, GM::Type::Entity);		// [Train]
 
 	// Get ASOTP text
 	LUA->GetField(-1, "ASOTPText");			// [Train,ASOTPText]
-	if (LUA->GetType(-1) == Type::String)
+	if (LUA->IsType(-1, GM::Type::String))
 	{
 		asotpStr = LUA->GetString(-1);      // [Train,ASOTPText]
 	}
@@ -73,7 +73,7 @@ LUA_FUNCTION(API_DataExchange)
 
 	// Get ASNP text
 	LUA->GetField(-1, "ASNPText");			// [Train,ASNPText]
-	if (LUA->GetType(-1) == Type::String)
+	if (LUA->IsType(-1, GM::Type::String))
 	{
 		asnpStr = LUA->GetString(-1);		// [Train,ASNPText]
 	}
@@ -87,7 +87,7 @@ LUA_FUNCTION(API_DataExchange)
 	LUA->GetField(-1, "GetNW2VarTable");	// [Train,ENT:GetNW2VarTable()]
 	LUA->Push(1);							// [Train,ENT:GetNW2VarTable(),Train]
 	LUA->Call(1, 1);						// [Train,NW2VarTable]
-	LUA->CheckType(-1, Type::Table);		// [Train,NW2VarTable]
+	LUA->CheckType(-1, GM::Type::Table);		// [Train,NW2VarTable]
 	LUA->PushNil();							// [Train,NW2VarTable,Nil]
 
 	// -2 - key, -1 - value
@@ -104,22 +104,22 @@ LUA_FUNCTION(API_DataExchange)
 	{
 		NW2VarTable::ControlItem control;
 		auto NW2VarName = LUA->GetString(-2);
-		LUA->CheckType(-1, Type::Table);	    // [Train,NW2VarTable,Key(String),Value(Table)]
+		LUA->CheckType(-1, GM::Type::Table);	    // [Train,NW2VarTable,Key(String),Value(Table)]
 			LUA->GetField(-1, "value");			// [Train,NW2VarTable,Key(String),Value(Table),Value(Table).value]
 				int valType = LUA->GetType(-1);
-				if (valType == Type::Bool)
+				if (valType == GM::Type::Bool)
 				{
 					control.val = LUA->GetBool(-1);
 					control.type = valType;
 				}
-				else if (valType == Type::Number)
+				else if (valType == GM::Type::Number)
 				{
 					control.val = (int)LUA->GetNumber(-1);
 					control.type = valType;
 				}
 			LUA->Pop();						// [Train,NW2VarTable,Key(String),Value(Table)]
 		LUA->Pop();							// [Train,NW2VarTable,Key(String)]
-		LUA->CheckType(-1, Type::String);
+		LUA->CheckType(-1, GM::Type::String);
 
 		tableOut[NW2VarName] = control;
 	}
@@ -132,9 +132,9 @@ LUA_FUNCTION(API_DataExchange)
 		if (tableOut[k].val != v.val)
 		{
 			LUA->PushString(k.c_str());
-			if (v.type == Type::Bool)
+			if (v.type == GM::Type::Bool)
 				LUA->PushBool(v.val);
-			else if (v.type == Type::Number)
+			else if (v.type == GM::Type::Number)
 				LUA->PushNumber(v.val);
 
 			LUA->RawSet(-3);
@@ -198,21 +198,28 @@ GMOD_MODULE_OPEN()
 	}
 
 	// 1 = Full path to DLL (aka "d:\games\steamlibrary\steamapps\common\garrysmod\garrysmod\lua\bin\gmcl_trainsignals_win32.dll")
-	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);// 2
-		LUA->GetField(-1, "TrainSignals"); // 3
-		LUA->CheckType(-1, Type::Table);
-		LUA->CreateTable();
-			PushCFunc(API_Start, "Start");
-			PushCFunc(API_Stop, "Stop");
-			PushCFunc(API_ForceStop, "ForceStop");
-			PushCFunc(API_DataExchange, "DataExchange");
-			PushCFunc(API_LoadSleepTimings, "LoadSleepTimings");
-			PushCFunc(API_LoadCalibraions, "LoadCalibrations");
-			PushCFunc(API_IsConnected, "IsConnected");
-			PushCFunc(API_Version, "Version");
-			PushStr(TRAIN_CLASSNAME, "TargetTrain");
-		LUA->SetField(-2, "Module");
-	LUA->Pop(2);
+	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+	{
+		LUA->GetField(-1, "TrainSignals");
+		if (LUA->IsType(-1, GM::Type::Table))
+		{
+			LUA->CreateTable();
+			{
+				PushCFunc(API_Start, "Start");
+				PushCFunc(API_Stop, "Stop");
+				PushCFunc(API_ForceStop, "ForceStop");
+				PushCFunc(API_DataExchange, "DataExchange");
+				PushCFunc(API_LoadSleepTimings, "LoadSleepTimings");
+				PushCFunc(API_LoadCalibraions, "LoadCalibrations");
+				PushCFunc(API_IsConnected, "IsConnected");
+				PushCFunc(API_Version, "Version");
+				PushStr(TRAIN_CLASSNAME, "TargetTrain");
+			}
+			LUA->SetField(-2, "Module");
+		}
+		LUA->Pop();
+	}
+	LUA->Pop();
 
 #ifdef SHOW_CONSOLE
 	AllocConsole();
@@ -233,11 +240,17 @@ GMOD_MODULE_CLOSE()
 	g_Device.Stop();
 
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+	{
 		LUA->GetField(-1, "TrainSignals");
+		if (LUA->IsType(-1, GM::Type::Table))
+		{
 			LUA->PushNil();
 			LUA->SetField(-2, "Module");
+		}
 		LUA->Pop();
+	}
 	LUA->Pop();
+		
 
 #ifdef SHOW_CONSOLE
 	std::cout << "TrainSignals: DLL unloaded. You can close this window.\n";

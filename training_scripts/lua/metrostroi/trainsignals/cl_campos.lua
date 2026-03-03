@@ -7,7 +7,7 @@ local function injectCameraPos()
     end
 
     local Train = scripted_ents.GetStored("gmod_subway_81-717_mvm").t
-    Train.Cameras[14] = {Vector(463,0,15),Angle(0,0,0),"Train.Common.Camera0",100}
+    Train.Cameras[#Train.Cameras] = {Vector(463,0,15),Angle(0,0,0),"Train.Common.Camera0",100}
 
     hook.Add("CalcVehicleView", "Metrostroi_TrainView", function(seat,ply,tbl)
         local retVal = Metrostroi.OldCalcViewFunction(seat,ply,tbl)

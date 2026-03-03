@@ -3,6 +3,7 @@ if not files then MsgC(Color(255,0,0),"gmcl_trainsignals not found.\n") return e
 
 TrainSignals = TrainSignals or {}
 if not TrainSignals.Module then require("trainsignals") end
+local Module = TrainSignals.Module
 
 local lastBtnSend = {}
 local function sendButtonMessage(train,btnID,value,override)
@@ -102,17 +103,31 @@ local specialButtons = {
 	["HornState"] = 5,
 }
 
+local ioNeedClear = false
+local ioCleared = true
 local function trainSignals_Main_Think()
 	Metrostroi.GetText = false
 	Metrostroi.MuteSounds = false
-    local Module = TrainSignals.Module
+    
+    -- Module check
 	if not Module then return end
 	if not Module.IsConnected() then return end
+    
+    -- IO buffer clear
+    if ioNeedClear and not ioCleared then
+        Module.ClearBuffers()
+        ioCleared = true
+    end
+    
+    -- Train check
 	local Train = LocalPlayer().InMetrostroiTrain
-	if not Train then return end
-	if Train.ClassName ~= Module.TargetTrain then return end
+	if not Train then ioNeedClear = true return end
+	if Train.ClassName ~= Module.TargetTrain then ioNeedClear = true return end
+    
 	Metrostroi.GetText = true
 	Metrostroi.MuteSounds = true
+    ioNeedClear = false
+    ioCleared = false
 
 	local InVar = Module.DataExchange(Train)
 
